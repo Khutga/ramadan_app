@@ -1,11 +1,10 @@
-import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 import '../models/prayer_model.dart';
 
 class AlarmService {
@@ -15,6 +14,7 @@ class AlarmService {
 
   static Future<void> initialize() async {
     tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation(_getLocalTimezone()));
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'ramadan_alarms',
@@ -29,6 +29,25 @@ class AlarmService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
+  }
+
+  static String _getLocalTimezone() {
+    final now = DateTime.now();
+    final offset = now.timeZoneOffset;
+    if (offset.inHours == 3) return 'Europe/Istanbul';
+    if (offset.inHours == 2) return 'Europe/Berlin';
+    if (offset.inHours == 1) return 'Europe/London';
+    if (offset.inHours == 0) return 'UTC';
+    if (offset.inHours == 4) return 'Asia/Dubai';
+    if (offset.inHours == 5) return 'Asia/Karachi';
+    if (offset.inMinutes == 330) return 'Asia/Kolkata';
+    if (offset.inHours == 8) return 'Asia/Shanghai';
+    if (offset.inHours == 9) return 'Asia/Tokyo';
+    if (offset.inHours == -5) return 'America/New_York';
+    if (offset.inHours == -6) return 'America/Chicago';
+    if (offset.inHours == -7) return 'America/Denver';
+    if (offset.inHours == -8) return 'America/Los_Angeles';
+    return 'UTC';
   }
 
   static Future<void> scheduleAlarm({
@@ -58,7 +77,7 @@ class AlarmService {
           visibility: NotificationVisibility.public,
           autoCancel: false,
           ongoing: true,
-          timeoutAfter: 30000, 
+          timeoutAfter: 30000,
         );
         break;
 
@@ -71,7 +90,7 @@ class AlarmService {
           priority: Priority.max,
           playSound: false,
           enableVibration: true,
-          vibrationPattern: Int64List(0), 
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
           fullScreenIntent: true,
           category: AndroidNotificationCategory.alarm,
         );
@@ -124,6 +143,7 @@ class AlarmService {
       tz.TZDateTime.from(scheduledTime, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: null,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
 
@@ -168,7 +188,7 @@ class AlarmService {
 
       await scheduleAlarm(
         id: i,
-        title: '🕌 ${prayer.name}',
+        title: '${prayer.name}',
         body: body,
         scheduledTime: prayer.time,
         mode: mode,
@@ -192,7 +212,6 @@ class AlarmService {
   static Future<void> _playAdhanCallback() async {
     try {
       final player = AudioPlayer();
-
       await player.setReleaseMode(ReleaseMode.loop);
       await player.setSource(AssetSource('sounds/adhan_short.mp3'));
       await player.resume();
@@ -233,7 +252,6 @@ class AlarmService {
       final granted = await android.areNotificationsEnabled();
       return granted ?? false;
     }
-
     return true;
   }
 
@@ -246,7 +264,6 @@ class AlarmService {
       final granted = await android.requestNotificationsPermission();
       return granted ?? false;
     }
-
     return true;
   }
 }

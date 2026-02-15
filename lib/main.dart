@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'providers/app_provider.dart';
 import 'services/alarm_service.dart';
@@ -14,6 +15,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeDateFormatting('tr_TR', null);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -38,8 +41,7 @@ void main() async {
   );
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
-    onDidReceiveNotificationResponse: (details) {
-    },
+    onDidReceiveNotificationResponse: (details) {},
   );
 
   runApp(const RamadanApp());

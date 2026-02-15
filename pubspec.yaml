@@ -21,12 +21,9 @@ dependencies:
   android_alarm_manager_plus: ^4.0.1
   audioplayers: ^6.0.0
   permission_handler: ^11.3.0
-  flutter_timezone: ^2.1.0
+  timezone: ^0.9.4
   hijri: ^3.0.0
   google_fonts: ^6.1.0
-  shimmer: ^3.0.0
-  lottie: ^3.1.0
-  flutter_svg: ^2.0.9
   animated_text_kit: ^4.2.2
 
 dev_dependencies:
