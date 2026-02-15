@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:ramadan_app/models/prayer_model.dart';
 
 import '../providers/app_provider.dart';
 import '../utils/theme.dart';
@@ -22,12 +23,10 @@ class HomeScreen extends StatelessWidget {
           child: SafeArea(
             child: CustomScrollView(
               slivers: [
-                // Üst başlık
                 SliverToBoxAdapter(
                   child: _buildHeader(context, provider),
                 ),
 
-                // Geri sayım kartı
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -38,17 +37,14 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                // İftar & Sahur bilgi kartları
                 SliverToBoxAdapter(
                   child: _buildIftarSahurCards(provider),
                 ),
 
-                // Bugünün namaz vakitleri (mini)
                 SliverToBoxAdapter(
                   child: _buildPrayerTimesPreview(provider),
                 ),
 
-                // Günün ayeti
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -59,7 +55,6 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Ramazan progress
                 if (provider.ramadanDay > 0)
                   SliverToBoxAdapter(
                     child: _buildRamadanProgress(provider),
@@ -126,7 +121,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          // Mezhep rozeti
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(

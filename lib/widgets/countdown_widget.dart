@@ -50,7 +50,6 @@ class CountdownWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Başlık
           Text(
             '${nextPrayer!.name} Vaktine Kalan',
             style: const TextStyle(
@@ -69,7 +68,6 @@ class CountdownWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Geri sayım
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -81,7 +79,6 @@ class CountdownWidget extends StatelessWidget {
             ],
           ),
 
-          // İftar / Sahur özel mesaj
           if (nextPrayer!.name.contains('İftar') ||
               nextPrayer!.name.contains('Mağrib'))
             _buildSpecialMessage('İftar vakti yaklaşıyor!', '🌙'),

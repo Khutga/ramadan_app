@@ -11,36 +11,29 @@ import '../services/quran_service.dart';
 import '../services/alarm_service.dart';
 
 class AppProvider extends ChangeNotifier {
-  // Konum
-  double _latitude = 41.0082; // İstanbul varsayılan
+  double _latitude = 41.0082; 
   double _longitude = 28.9784;
   String _cityName = 'İstanbul';
   String _countryName = 'Türkiye';
   bool _locationLoading = true;
   String? _locationError;
 
-  // Mezhep
   MadhhabType _madhhab = MadhhabType.sunni;
   SunniMethod _sunniMethod = SunniMethod.diyanet;
 
-  // Namaz vakitleri
   List<PrayerTimeModel> _prayerTimes = [];
   PrayerTimeModel? _nextPrayer;
   Duration? _timeUntilNext;
   Timer? _countdownTimer;
 
-  // Günün ayeti
   QuranVerse? _dailyVerse;
 
-  // Alarm ayarları
   Map<String, bool> _alarmEnabled = {};
   Map<String, AlarmMode> _alarmModes = {};
 
-  // Ramazan bilgisi
   int _ramadanDay = 0;
   int _totalRamadanDays = 30;
 
-  // Getters
   double get latitude => _latitude;
   double get longitude => _longitude;
   String get cityName => _cityName;
@@ -58,7 +51,6 @@ class AppProvider extends ChangeNotifier {
   int get ramadanDay => _ramadanDay;
   int get totalRamadanDays => _totalRamadanDays;
 
-  /// İlk başlatma
   Future<void> initialize() async {
     await _loadPreferences();
     await _getCurrentLocation();
@@ -70,19 +62,15 @@ class AppProvider extends ChangeNotifier {
     _scheduleAlarms();
   }
 
-  /// Tercihleri yükle
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Mezhep
     final madhhabIndex = prefs.getInt('madhhab') ?? 0;
     _madhhab = MadhhabType.values[madhhabIndex];
 
-    // Sünni yöntem
     final methodIndex = prefs.getInt('sunni_method') ?? 0;
     _sunniMethod = SunniMethod.values[methodIndex];
 
-    // Alarm ayarları
     final alarmKeys = [
       'İmsak (Sahur)', 'Sabah', 'Güneş', 'Öğle',
       'İkindi', 'Akşam (İftar)', 'Akşam (Mağrib)', 'Yatsı'
@@ -93,7 +81,6 @@ class AppProvider extends ChangeNotifier {
       _alarmModes[key] = AlarmMode.values[modeIndex];
     }
 
-    // İftar ve Sahur varsayılan olarak açık
     _alarmEnabled['İmsak (Sahur)'] =
         prefs.getBool('alarm_enabled_İmsak (Sahur)') ?? true;
     _alarmEnabled['Akşam (İftar)'] =
@@ -105,7 +92,6 @@ class AppProvider extends ChangeNotifier {
     _alarmModes['Akşam (Mağrib)'] ??= AlarmMode.adhan;
   }
 
-  /// Tercihleri kaydet
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('madhhab', _madhhab.index);
@@ -119,7 +105,6 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  /// Konum al
   Future<void> _getCurrentLocation() async {
     _locationLoading = true;
     notifyListeners();
@@ -152,15 +137,12 @@ class AppProvider extends ChangeNotifier {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-        ),
+        desiredAccuracy: LocationAccuracy.low,
       );
 
       _latitude = position.latitude;
       _longitude = position.longitude;
 
-      // Şehir adını al
       try {
         final placemarks = await placemarkFromCoordinates(
           _latitude,
@@ -183,7 +165,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Namaz vakitlerini hesapla
   void _calculatePrayerTimes() {
     _prayerTimes = PrayerTimeService.calculatePrayerTimes(
       latitude: _latitude,
@@ -199,20 +180,17 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Günün ayetini yükle
   void _loadDailyVerse() {
     _dailyVerse = QuranService.getDailyVerse();
     notifyListeners();
   }
 
-  /// Geri sayım zamanlayıcısı
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _timeUntilNext = PrayerTimeService.timeUntilNextPrayer(_prayerTimes);
       _nextPrayer = PrayerTimeService.getNextPrayer(_prayerTimes);
 
-      // Gün değişimi kontrolü
       if (_nextPrayer == null) {
         _calculatePrayerTimes();
       }
@@ -221,11 +199,7 @@ class AppProvider extends ChangeNotifier {
     });
   }
 
-  /// Ramazan gününü hesapla (yaklaşık)
   void _calculateRamadanDay() {
-    // 2026 Ramazan tahmini: 17 Şubat - 19 Mart (Hicri 1447)
-    // 2025 Ramazan: 28 Şubat - 30 Mart
-    // Bu fonksiyon Hicri takvime göre güncellenmelidir
     final now = DateTime.now();
     final ramadanStart2026 = DateTime(2026, 2, 17);
     final ramadanStart2025 = DateTime(2025, 2, 28);
@@ -236,7 +210,6 @@ class AppProvider extends ChangeNotifier {
     } else if (now.year == 2025) {
       ramadanStart = ramadanStart2025;
     } else {
-      // Genel hesaplama (yaklaşık)
       ramadanStart = ramadanStart2026;
     }
 
@@ -244,16 +217,15 @@ class AppProvider extends ChangeNotifier {
     if (difference >= 0 && difference < 30) {
       _ramadanDay = difference + 1;
     } else if (difference < 0) {
-      _ramadanDay = 0; // Ramazan henüz başlamadı
+      _ramadanDay = 0; 
     } else {
-      _ramadanDay = 0; // Ramazan bitti
+      _ramadanDay = 0; 
     }
 
     _totalRamadanDays = 30;
     notifyListeners();
   }
 
-  /// Alarmları planla
   Future<void> _scheduleAlarms() async {
     await AlarmService.scheduleAllAlarms(
       prayers: _prayerTimes,
@@ -262,7 +234,6 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
-  /// Mezhep değiştir
   Future<void> setMadhhab(MadhhabType madhhab) async {
     _madhhab = madhhab;
     _calculatePrayerTimes();
@@ -271,7 +242,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sünni hesaplama yöntemi değiştir
   Future<void> setSunniMethod(SunniMethod method) async {
     _sunniMethod = method;
     _calculatePrayerTimes();
@@ -280,7 +250,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Alarm aç/kapa
   Future<void> toggleAlarm(String prayerName, bool enabled) async {
     _alarmEnabled[prayerName] = enabled;
     await _savePreferences();
@@ -288,7 +257,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Alarm modu değiştir
   Future<void> setAlarmMode(String prayerName, AlarmMode mode) async {
     _alarmModes[prayerName] = mode;
     await _savePreferences();
@@ -296,7 +264,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Konumu güncelle (manuel)
   Future<void> updateLocation(double lat, double lng, String city) async {
     _latitude = lat;
     _longitude = lng;
@@ -306,7 +273,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Yeni ayet yükle
   void refreshVerse() {
     _dailyVerse = QuranService.getRandomVerse();
     notifyListeners();

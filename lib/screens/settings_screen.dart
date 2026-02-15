@@ -31,13 +31,11 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // ─── Mezhep Seçimi ───
                 _buildSectionTitle('Mezhep'),
                 const SizedBox(height: 8),
                 _buildMadhhabSelector(context, provider),
                 const SizedBox(height: 20),
 
-                // ─── Sünni Hesaplama Yöntemi ───
                 if (provider.madhhab == MadhhabType.sunni) ...[
                   _buildSectionTitle('Hesaplama Yöntemi'),
                   const SizedBox(height: 8),
@@ -45,19 +43,16 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
 
-                // ─── Konum ───
                 _buildSectionTitle('Konum'),
                 const SizedBox(height: 8),
                 _buildLocationCard(provider),
                 const SizedBox(height: 20),
 
-                // ─── Alarm Ayarları ───
                 _buildSectionTitle('Alarm Ayarları'),
                 const SizedBox(height: 8),
                 _buildAlarmSettingsCard(context, provider),
                 const SizedBox(height: 20),
 
-                // ─── Bilgi ───
                 _buildSectionTitle('Bilgi'),
                 const SizedBox(height: 8),
                 _buildInfoCard(),
@@ -293,7 +288,6 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Tümünü aç/kapa
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -316,7 +310,6 @@ class SettingsScreen extends StatelessWidget {
           ),
           const Divider(color: AppColors.surfaceLight),
 
-          // Tüm modları değiştir
           const Text(
             'Varsayılan Alarm Modu',
             style: TextStyle(
@@ -354,7 +347,6 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Ezan test
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(

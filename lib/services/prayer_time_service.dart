@@ -1,10 +1,7 @@
 import 'package:adhan/adhan.dart' as adhan;
 import '../models/prayer_model.dart';
 
-/// Namaz vakitleri hesaplama servisi
-/// Sünni ve Şii farkları dahil
 class PrayerTimeService {
-  /// Namaz vakitlerini hesapla
   static List<PrayerTimeModel> calculatePrayerTimes({
     required double latitude,
     required double longitude,
@@ -18,13 +15,9 @@ class PrayerTimeService {
     adhan.CalculationParameters params;
 
     if (madhhab == MadhhabType.shia) {
-      // Şii (Caferi) hesaplama
-      // Caferi: Fecr açısı 16°, İşa açısı 14°
-      // Mağrib: Güneşin batışından sonra kırmızılığın kaybolması (~4 derece daha)
       params = adhan.CalculationMethod.tehran.getParameters();
-      params.madhab = adhan.Madhab.shafi; // Şii'de Asr hesabı Şafi gibidir
+      params.madhab = adhan.Madhab.shafi; 
     } else {
-      // Sünni hesaplama
       switch (sunniMethod) {
         case SunniMethod.diyanet:
           params = adhan.CalculationMethod.turkey.getParameters();
@@ -57,7 +50,6 @@ class PrayerTimeService {
 
     List<PrayerTimeModel> times = [];
 
-    // İmsak / Sahur (Fecr'den ~10 dk önce)
     final imsak = prayerTimes.fajr.subtract(const Duration(minutes: 10));
     times.add(PrayerTimeModel(
       name: 'İmsak (Sahur)',
@@ -65,28 +57,24 @@ class PrayerTimeService {
       time: imsak,
     ));
 
-    // Sabah (Fecr)
     times.add(PrayerTimeModel(
       name: 'Sabah',
       nameArabic: 'الفجر',
       time: prayerTimes.fajr,
     ));
 
-    // Güneş doğuşu
     times.add(PrayerTimeModel(
       name: 'Güneş',
       nameArabic: 'الشروق',
       time: prayerTimes.sunrise,
     ));
 
-    // Öğle
     times.add(PrayerTimeModel(
       name: 'Öğle',
       nameArabic: 'الظهر',
       time: prayerTimes.dhuhr,
     ));
 
-    // İkindi
     times.add(PrayerTimeModel(
       name: 'İkindi',
       nameArabic: 'العصر',
@@ -94,8 +82,6 @@ class PrayerTimeService {
     ));
 
     if (madhhab == MadhhabType.shia) {
-      // Şii: Mağrib güneş batışından biraz sonra
-      // (kırmızılık geçene kadar, genellikle ~17-20 dk sonra)
       final maghribShia = prayerTimes.maghrib.add(const Duration(minutes: 17));
       times.add(PrayerTimeModel(
         name: 'Akşam (Mağrib)',
@@ -103,10 +89,7 @@ class PrayerTimeService {
         time: maghribShia,
       ));
 
-      // İftar vakti: Şii'de Mağrib ile aynı (biraz geç)
-      // Sünni'de güneşin batması ile aynı
     } else {
-      // Sünni: Mağrib güneşin batışı ile
       times.add(PrayerTimeModel(
         name: 'Akşam (İftar)',
         nameArabic: 'المغرب',
@@ -114,7 +97,6 @@ class PrayerTimeService {
       ));
     }
 
-    // Yatsı
     times.add(PrayerTimeModel(
       name: 'Yatsı',
       nameArabic: 'العشاء',
@@ -124,7 +106,6 @@ class PrayerTimeService {
     return times;
   }
 
-  /// İftar vaktini al
   static DateTime getIftarTime({
     required double latitude,
     required double longitude,
@@ -156,14 +137,12 @@ class PrayerTimeService {
     );
 
     if (madhhab == MadhhabType.shia) {
-      // Şii: Mağrib gecikmeli (~17 dk)
       return prayerTimes.maghrib.add(const Duration(minutes: 17));
     }
 
     return prayerTimes.maghrib;
   }
 
-  /// Sahur vaktini al
   static DateTime getSahurTime({
     required double latitude,
     required double longitude,
@@ -193,12 +172,9 @@ class PrayerTimeService {
       dateComponents,
       params,
     );
-
-    // İmsak: Fecr'den 10 dk önce
     return prayerTimes.fajr.subtract(const Duration(minutes: 10));
   }
 
-  /// Bir sonraki namaz vaktini bul
   static PrayerTimeModel? getNextPrayer(List<PrayerTimeModel> prayers) {
     final now = DateTime.now();
     for (final prayer in prayers) {
@@ -209,7 +185,6 @@ class PrayerTimeService {
     return null;
   }
 
-  /// Bir sonraki namaza kalan süre
   static Duration? timeUntilNextPrayer(List<PrayerTimeModel> prayers) {
     final next = getNextPrayer(prayers);
     if (next == null) return null;

@@ -15,7 +15,6 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Durum çubuğu stilini ayarla
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -23,10 +22,8 @@ void main() async {
     ),
   );
 
-  // Alarm manager'ı başlat
   await AndroidAlarmManager.initialize();
 
-  // Bildirim ayarları
   const AndroidInitializationSettings androidSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const DarwinInitializationSettings iosSettings =
@@ -42,7 +39,6 @@ void main() async {
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: (details) {
-      // Bildirime tıklandığında yapılacak işlem
     },
   );
 

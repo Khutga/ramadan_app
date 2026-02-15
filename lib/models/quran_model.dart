@@ -1,4 +1,3 @@
-/// Kuran ayeti modeli
 class QuranVerse {
   final int surahNumber;
   final String surahName;

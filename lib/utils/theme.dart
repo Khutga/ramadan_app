@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Ana renkler - Ramazan teması
   static const Color primaryDark = Color(0xFF0D1B2A);
   static const Color primaryMid = Color(0xFF1B2D45);
-  static const Color accent = Color(0xFFD4AF37); // Altın
+  static const Color accent = Color(0xFFD4AF37); 
   static const Color accentLight = Color(0xFFF5E6B8);
   static const Color surface = Color(0xFF162032);
   static const Color surfaceLight = Color(0xFF1E2D44);
@@ -18,7 +17,6 @@ class AppColors {
   static const Color sunni = Color(0xFF2E7D32);
   static const Color shia = Color(0xFF1565C0);
 
-  // Gradient
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -58,7 +56,7 @@ class AppTheme {
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.cardBg,
         elevation: 4,
         shape: RoundedRectangleBorder(

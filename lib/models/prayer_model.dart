@@ -1,4 +1,3 @@
-/// Namaz vakitleri modeli
 class PrayerTimeModel {
   final String name;
   final String nameArabic;
@@ -31,12 +30,11 @@ class PrayerTimeModel {
   }
 }
 
-/// Alarm modları
 enum AlarmMode {
-  notification, // Sadece bildirim
-  adhan,        // Ezan sesi (3 saniye loop)
-  vibration,    // Titreşim
-  silent,       // Sessiz bildirim
+  notification,
+  adhan,      
+  vibration,  
+  silent,     
 }
 
 extension AlarmModeExtension on AlarmMode {
@@ -67,7 +65,6 @@ extension AlarmModeExtension on AlarmMode {
   }
 }
 
-/// Mezhep enum
 enum MadhhabType {
   sunni,
   shia,
@@ -93,7 +90,6 @@ extension MadhhabExtension on MadhhabType {
   }
 }
 
-/// Sünni hesaplama yöntemleri
 enum SunniMethod {
   diyanet,
   muslimWorldLeague,

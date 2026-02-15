@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -7,13 +8,11 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/prayer_model.dart';
 
-/// Alarm servisi - uygulama kapalıyken bile çalışır
 class AlarmService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static AudioPlayer? _audioPlayer;
 
-  /// Servisi başlat
   static Future<void> initialize() async {
     tz.initializeTimeZones();
 
@@ -32,7 +31,6 @@ class AlarmService {
         ?.createNotificationChannel(channel);
   }
 
-  /// Alarm kur
   static Future<void> scheduleAlarm({
     required int id,
     required String title,
@@ -40,10 +38,8 @@ class AlarmService {
     required DateTime scheduledTime,
     required AlarmMode mode,
   }) async {
-    // Geçmiş zamanlar için alarm kurma
     if (scheduledTime.isBefore(DateTime.now())) return;
 
-    // Alarm moduna göre bildirim ayarları
     AndroidNotificationDetails androidDetails;
 
     switch (mode) {
@@ -62,12 +58,12 @@ class AlarmService {
           visibility: NotificationVisibility.public,
           autoCancel: false,
           ongoing: true,
-          timeoutAfter: 30000, // 30 saniye sonra kapat
+          timeoutAfter: 30000, 
         );
         break;
 
       case AlarmMode.vibration:
-        androidDetails = const AndroidNotificationDetails(
+        androidDetails = AndroidNotificationDetails(
           'ramadan_alarms',
           'Ramazan Alarmları',
           channelDescription: 'İftar, Sahur ve Namaz vakti bildirimleri',
@@ -75,7 +71,7 @@ class AlarmService {
           priority: Priority.max,
           playSound: false,
           enableVibration: true,
-          vibrationPattern: Int64List(0), // Varsayılan titreşim
+          vibrationPattern: Int64List(0), 
           fullScreenIntent: true,
           category: AndroidNotificationCategory.alarm,
         );
@@ -121,7 +117,6 @@ class AlarmService {
       iOS: iosDetails,
     );
 
-    // Zamanlanmış bildirim
     await _notifications.zonedSchedule(
       id,
       title,
@@ -129,18 +124,16 @@ class AlarmService {
       tz.TZDateTime.from(scheduledTime, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: null,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
 
-    // Alarm modunu kaydet (background callback için)
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('alarm_mode_$id', mode.name);
 
-    // Ezan sesi modunda ek alarm kur (AudioPlayer ile çalmak için)
     if (mode == AlarmMode.adhan) {
       await AndroidAlarmManager.oneShotAt(
         scheduledTime,
-        id + 10000, // Farklı ID
+        id + 10000,
         _playAdhanCallback,
         exact: true,
         wakeup: true,
@@ -150,13 +143,11 @@ class AlarmService {
     }
   }
 
-  /// Tüm namaz vakitleri için alarm kur
   static Future<void> scheduleAllAlarms({
     required List<PrayerTimeModel> prayers,
     required Map<String, AlarmMode> alarmModes,
     required Map<String, bool> alarmEnabled,
   }) async {
-    // Önce tüm mevcut alarmları iptal et
     await cancelAllAlarms();
 
     for (int i = 0; i < prayers.length; i++) {
@@ -185,43 +176,35 @@ class AlarmService {
     }
   }
 
-  /// Belirli bir alarmı iptal et
   static Future<void> cancelAlarm(int id) async {
     await _notifications.cancel(id);
     await AndroidAlarmManager.cancel(id + 10000);
   }
 
-  /// Tüm alarmları iptal et
   static Future<void> cancelAllAlarms() async {
     await _notifications.cancelAll();
-    // AndroidAlarmManager için de iptal et
     for (int i = 0; i < 20; i++) {
       await AndroidAlarmManager.cancel(i + 10000);
     }
   }
 
-  /// Background'da ezan çal (static callback)
   @pragma('vm:entry-point')
   static Future<void> _playAdhanCallback() async {
     try {
       final player = AudioPlayer();
 
-      // Ezan sesini çal (3 saniyelik loop)
       await player.setReleaseMode(ReleaseMode.loop);
       await player.setSource(AssetSource('sounds/adhan_short.mp3'));
       await player.resume();
 
-      // 30 saniye sonra durdur
       await Future.delayed(const Duration(seconds: 30));
       await player.stop();
       await player.dispose();
     } catch (e) {
-      // Ses çalma hatası
       print('Ezan çalma hatası: $e');
     }
   }
 
-  /// Ezan sesini test et
   static Future<void> testAdhanSound() async {
     _audioPlayer?.dispose();
     _audioPlayer = AudioPlayer();
@@ -230,20 +213,17 @@ class AlarmService {
     await _audioPlayer!.setSource(AssetSource('sounds/adhan_short.mp3'));
     await _audioPlayer!.resume();
 
-    // 5 saniye sonra durdur (test)
     Future.delayed(const Duration(seconds: 5), () {
       stopAdhan();
     });
   }
 
-  /// Ezan sesini durdur
   static Future<void> stopAdhan() async {
     await _audioPlayer?.stop();
     await _audioPlayer?.dispose();
     _audioPlayer = null;
   }
 
-  /// Bildirim izinlerini kontrol et
   static Future<bool> checkPermissions() async {
     final android = _notifications
         .resolvePlatformSpecificImplementation<
@@ -257,7 +237,6 @@ class AlarmService {
     return true;
   }
 
-  /// Bildirim izni iste
   static Future<bool> requestPermissions() async {
     final android = _notifications
         .resolvePlatformSpecificImplementation<

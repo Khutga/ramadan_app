@@ -21,18 +21,15 @@ class PrayerTimesScreen extends StatelessWidget {
           child: SafeArea(
             child: CustomScrollView(
               slivers: [
-                // Başlık
                 SliverToBoxAdapter(
                   child: _buildHeader(provider),
                 ),
 
-                // Mezhep farkı bilgisi
                 if (provider.madhhab == MadhhabType.shia)
                   SliverToBoxAdapter(
                     child: _buildShiaInfoBanner(),
                   ),
 
-                // Namaz vakitleri listesi
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -50,7 +47,6 @@ class PrayerTimesScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Sünni/Şii saat farkı kartı
                 SliverToBoxAdapter(
                   child: _buildTimeDifferenceCard(context, provider),
                 ),
@@ -186,7 +182,6 @@ class PrayerTimesScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  // Sol: İsim ve Arapça
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +225,6 @@ class PrayerTimesScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Alarm göstergesi
                   if (isEnabled)
                     Container(
                       margin: const EdgeInsets.only(right: 12),
@@ -261,7 +255,6 @@ class PrayerTimesScreen extends StatelessWidget {
                       ),
                     ),
 
-                  // Saat
                   Text(
                     timeStr,
                     style: TextStyle(
@@ -278,7 +271,6 @@ class PrayerTimesScreen extends StatelessWidget {
 
                   const SizedBox(width: 8),
 
-                  // Alarm switch
                   SizedBox(
                     height: 28,
                     child: Switch(
@@ -318,7 +310,6 @@ class PrayerTimesScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Tutamak
               Center(
                 child: Container(
                   width: 40,
@@ -425,7 +416,6 @@ class PrayerTimesScreen extends StatelessWidget {
                 );
               }),
 
-              // Test butonu (Ezan modu için)
               if (currentMode == AlarmMode.adhan)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),

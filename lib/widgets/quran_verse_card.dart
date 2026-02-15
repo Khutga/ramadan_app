@@ -29,7 +29,6 @@ class QuranVerseCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Başlık
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -77,12 +76,10 @@ class QuranVerseCard extends StatelessWidget {
             ),
           ),
 
-          // İçerik
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Arapça
                 Text(
                   verse!.arabicText,
                   style: const TextStyle(
@@ -95,7 +92,6 @@ class QuranVerseCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Türkçe
                 Text(
                   verse!.turkishTranslation,
                   style: const TextStyle(

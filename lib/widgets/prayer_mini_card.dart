@@ -31,7 +31,6 @@ class PrayerMiniCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Durum göstergesi
           Container(
             width: 6,
             height: 6,
@@ -46,7 +45,6 @@ class PrayerMiniCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // İsim
           Expanded(
             child: Text(
               prayer.name,
@@ -60,7 +58,6 @@ class PrayerMiniCard extends StatelessWidget {
             ),
           ),
 
-          // Arapça isim
           Text(
             prayer.nameArabic,
             style: TextStyle(
@@ -72,7 +69,6 @@ class PrayerMiniCard extends StatelessWidget {
           ),
           const SizedBox(width: 16),
 
-          // Saat
           Text(
             timeStr,
             style: TextStyle(

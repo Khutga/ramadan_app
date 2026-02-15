@@ -1,9 +1,6 @@
 import '../models/quran_model.dart';
 
-/// Günlük Kuran ayeti servisi
-/// Ramazan boyunca her gün farklı bir ayet gösterir
 class QuranService {
-  /// Ramazan ile ilgili ve önemli ayetler koleksiyonu
   static const List<QuranVerse> _verses = [
     QuranVerse(
       surahNumber: 2,
@@ -348,27 +345,22 @@ class QuranService {
     ),
   ];
 
-  /// Günün ayetini al (güne göre döner)
   static QuranVerse getDailyVerse() {
     final now = DateTime.now();
-    // Yılın gününe göre ayet seç (30 ayet arasında döner)
     final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
     final index = dayOfYear % _verses.length;
     return _verses[index];
   }
 
-  /// Belirli bir Ramazan gününe göre ayet al
   static QuranVerse getVerseForRamadanDay(int day) {
     final index = (day - 1) % _verses.length;
     return _verses[index];
   }
 
-  /// Rastgele ayet al
   static QuranVerse getRandomVerse() {
     final index = DateTime.now().millisecondsSinceEpoch % _verses.length;
     return _verses[index];
   }
 
-  /// Tüm ayetleri al
   static List<QuranVerse> getAllVerses() => _verses;
 }

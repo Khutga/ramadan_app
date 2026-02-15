@@ -22,7 +22,6 @@ class QuranScreen extends StatelessWidget {
           child: SafeArea(
             child: CustomScrollView(
               slivers: [
-                // Başlık
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -37,13 +36,11 @@ class QuranScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Ana ayet kartı
                 if (verse != null)
                   SliverToBoxAdapter(
                     child: _buildMainVerseCard(verse, provider),
                   ),
 
-                // Ayırıcı
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -66,7 +63,6 @@ class QuranScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Tüm ayetler listesi
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -116,7 +112,6 @@ class QuranScreen extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Üst dekoratif çizgi
             Container(
               height: 3,
               margin: const EdgeInsets.symmetric(horizontal: 40),
@@ -132,7 +127,6 @@ class QuranScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Besmele
                   const Text(
                     'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
                     style: TextStyle(
@@ -144,7 +138,6 @@ class QuranScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Arapça metin
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -165,7 +158,6 @@ class QuranScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Türkçe çeviri
                   Text(
                     verse.turkishTranslation,
                     style: const TextStyle(
@@ -178,7 +170,6 @@ class QuranScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // İngilizce çeviri
                   Text(
                     verse.englishTranslation,
                     style: TextStyle(
@@ -190,7 +181,6 @@ class QuranScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Sure bilgisi
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -215,7 +205,6 @@ class QuranScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Yenile butonu
                   TextButton.icon(
                     onPressed: provider.refreshVerse,
                     icon: const Icon(Icons.refresh, size: 18),
@@ -249,7 +238,6 @@ class QuranScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Numara
                 Container(
                   width: 32,
                   height: 32,
@@ -270,7 +258,6 @@ class QuranScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // İçerik
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +317,6 @@ class QuranScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Tutamak
                   Container(
                     width: 40,
                     height: 4,
