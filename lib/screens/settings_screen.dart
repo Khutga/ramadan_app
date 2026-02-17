@@ -141,14 +141,11 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-
           ..._buildSunniMethods(provider),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(color: Colors.white10),
           ),
-
           _buildMethodTile(
             isSelected: provider.madhhab == MadhhabType.shia,
             title: 'Caferi (Tahran)',
@@ -211,8 +208,7 @@ class SettingsScreen extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color:
-              isSelected ? activeColor.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? activeColor.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? activeColor.withOpacity(0.4) : Colors.white10,
@@ -225,8 +221,7 @@ class SettingsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: onTap,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   Expanded(
@@ -237,9 +232,8 @@ class SettingsScreen extends StatelessWidget {
                           title,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w500,
                             color: isSelected
                                 ? Colors.white
                                 : AppColors.textPrimary,
@@ -301,8 +295,8 @@ class SettingsScreen extends StatelessWidget {
               color: AppColors.accent.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.my_location_rounded,
-                color: AppColors.accent),
+            child:
+                const Icon(Icons.my_location_rounded, color: AppColors.accent),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -393,12 +387,10 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Divider(color: Colors.white10),
           ),
-
           const Text(
             'TÜM VAKİTLERE UYGULA',
             style: TextStyle(
@@ -409,7 +401,6 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -445,8 +436,7 @@ class SettingsScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(mode.icon,
-                            style: const TextStyle(fontSize: 18)),
+                        Text(mode.icon, style: const TextStyle(fontSize: 18)),
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
@@ -495,8 +485,8 @@ class SettingsScreen extends StatelessWidget {
                   color: const Color(0xFF243B55).withOpacity(0.5),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.alarm,
-                    color: AppColors.accent, size: 20),
+                child:
+                    const Icon(Icons.alarm, color: AppColors.accent, size: 20),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -518,7 +508,6 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-
           if (!provider.sahurAlarmEnabled)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -530,12 +519,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-
           if (provider.sahurAlarmEnabled) ...[
             const SizedBox(height: 12),
             const Divider(color: Colors.white10),
             const SizedBox(height: 12),
-
             const Text(
               'İmsak\'tan kaç dakika önce?',
               style: TextStyle(
@@ -549,8 +536,7 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 _buildOffsetBtn(Icons.remove, () {
                   if (provider.sahurAlarmOffset > 5) {
-                    provider
-                        .setSahurAlarmOffset(provider.sahurAlarmOffset - 5);
+                    provider.setSahurAlarmOffset(provider.sahurAlarmOffset - 5);
                   }
                 }),
                 Container(
@@ -567,15 +553,12 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 _buildOffsetBtn(Icons.add, () {
                   if (provider.sahurAlarmOffset < 120) {
-                    provider
-                        .setSahurAlarmOffset(provider.sahurAlarmOffset + 5);
+                    provider.setSahurAlarmOffset(provider.sahurAlarmOffset + 5);
                   }
                 }),
               ],
             ),
-
             const SizedBox(height: 16),
-
             if (imsakTime != null && sahurAlarmTime != null)
               Container(
                 width: double.infinity,
@@ -588,8 +571,7 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text('⏰',
-                            style: TextStyle(fontSize: 16)),
+                        const Text('⏰', style: TextStyle(fontSize: 16)),
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
@@ -616,8 +598,7 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        const Text('🍽️',
-                            style: TextStyle(fontSize: 16)),
+                        const Text('🍽️', style: TextStyle(fontSize: 16)),
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
@@ -641,7 +622,6 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
             if (sahurAlarmTime != null &&
                 imsakTime != null &&
                 sahurAlarmTime.isAfter(imsakTime))
@@ -674,9 +654,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
             const SizedBox(height: 14),
-
             const Text(
               'Alarm Modu',
               style: TextStyle(
@@ -693,8 +671,8 @@ class SettingsScreen extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => provider.setSahurAlarmMode(mode),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.accent.withOpacity(0.15)
@@ -713,9 +691,8 @@ class SettingsScreen extends StatelessWidget {
                         color: isSelected
                             ? AppColors.accent
                             : AppColors.textSecondary,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -772,8 +749,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.accent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
@@ -1131,15 +1107,12 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
           const Text(
             'Test Modu',
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
-
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -1149,8 +1122,8 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
                 onTap: () => setState(() => _selectedTestMode = mode),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.accent.withOpacity(0.15)
@@ -1166,8 +1139,7 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(mode.icon,
-                          style: const TextStyle(fontSize: 16)),
+                      Text(mode.icon, style: const TextStyle(fontSize: 16)),
                       const SizedBox(width: 6),
                       Text(
                         mode.displayName,
@@ -1176,9 +1148,8 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
                           color: isSelected
                               ? AppColors.accent
                               : AppColors.textSecondary,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ],
@@ -1187,24 +1158,23 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
               );
             }).toList(),
           ),
-
           const SizedBox(height: 16),
-
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: _isScheduled
+              onPressed: false
                   ? null
                   : () async {
+                      /* await AlarmService.scheduleNormalTestAlarm(); */
                       await AlarmService.scheduleTestAlarm(
                         mode: _selectedTestMode,
                         delaySeconds: 60,
                       );
                       setState(() {
                         _isScheduled = true;
-                        _scheduledTime = DateTime.now()
-                            .add(const Duration(seconds: 60));
+                        _scheduledTime =
+                            DateTime.now().add(const Duration(seconds: 60));
                       });
 
                       if (mounted) {
@@ -1212,7 +1182,7 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
                           SnackBar(
                             content: Text(
                                 '${_selectedTestMode.icon} Test alarmı 1 dakika sonra çalacak!'),
-                            duration: const Duration(seconds: 3),
+                            duration: const Duration(seconds: 60),
                           ),
                         );
                       }
@@ -1227,9 +1197,7 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
                       });
                     },
               icon: Icon(
-                _isScheduled
-                    ? Icons.check_circle_outline
-                    : Icons.send_rounded,
+                _isScheduled ? Icons.check_circle_outline : Icons.send_rounded,
                 size: 20,
               ),
               label: Text(
@@ -1245,11 +1213,9 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
                 backgroundColor: _isScheduled
                     ? AppColors.success.withOpacity(0.2)
                     : AppColors.accent,
-                foregroundColor: _isScheduled
-                    ? AppColors.success
-                    : AppColors.primaryDark,
-                disabledBackgroundColor:
-                    AppColors.success.withOpacity(0.2),
+                foregroundColor:
+                    _isScheduled ? AppColors.success : AppColors.primaryDark,
+                disabledBackgroundColor: AppColors.success.withOpacity(0.2),
                 disabledForegroundColor: AppColors.success,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1258,7 +1224,6 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
               ),
             ),
           ),
-
           if (_isScheduled && _scheduledTime != null)
             Padding(
               padding: const EdgeInsets.only(top: 10),

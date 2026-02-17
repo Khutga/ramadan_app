@@ -32,15 +32,41 @@ class AlarmService {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation(_getLocalTimezone()));
 
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const iosSettings = DarwinInitializationSettings();
+
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _notifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (details) async {
+        print('Notification tapped: ${details.payload}');
+      },
+    );
+
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation(_getLocalTimezone()));
+
     final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
       // Eski kanalları temizle
       final oldChannels = [
-        'ramadan_alarms_v4', 'ramadan_test_alarms_v4', 'ramadan_sahur_channel_v4',
-        'ramadan_adhan_v5', 'ramadan_default_v5', 'ramadan_vibration_v5',
-        'ramadan_silent_v5', 'ramadan_test_v5', 'ramadan_sahur_adhan_v5',
+        'ramadan_alarms_v4',
+        'ramadan_test_alarms_v4',
+        'ramadan_sahur_channel_v4',
+        'ramadan_adhan_v5',
+        'ramadan_default_v5',
+        'ramadan_vibration_v5',
+        'ramadan_silent_v5',
+        'ramadan_test_v5',
+        'ramadan_sahur_adhan_v5',
         'ramadan_sahur_v5',
       ];
       for (final ch in oldChannels) {
@@ -601,5 +627,35 @@ class AlarmService {
 
   static Future<List<PendingNotificationRequest>> getPendingAlarms() async {
     return await _notifications.pendingNotificationRequests();
+  }
+
+  static Future<void> scheduleNormalTestAlarm() async {
+    final now = DateTime.now();
+    final scheduledTime = now.add(const Duration(seconds: 10));
+
+    await _notifications.zonedSchedule(
+      999, // test id
+      'Test Alarmı',
+      '10 saniye geçti 🚀',
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'normal_alarm_channel',
+          'Normal Alarmlar',
+          channelDescription: 'Normal test alarm kanalı',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          fullScreenIntent: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: null,
+    );
+
+    print('🔔 Normal test alarm kuruldu: $scheduledTime');
   }
 }

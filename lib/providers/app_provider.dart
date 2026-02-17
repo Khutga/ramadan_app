@@ -148,7 +148,8 @@ class AppProvider extends ChangeNotifier {
     // Sahur alarm tercihleri
     _sahurAlarmOffset = prefs.getInt('sahur_alarm_offset') ?? 30;
     _sahurAlarmEnabled = prefs.getBool('sahur_alarm_enabled') ?? false;
-    final sahurModeIndex = prefs.getInt('sahur_alarm_mode') ?? 1; // Default adhan
+    final sahurModeIndex =
+        prefs.getInt('sahur_alarm_mode') ?? 1; // Default adhan
     _sahurAlarmMode = AlarmMode.values[sahurModeIndex];
 
     final alarmKeys = [
@@ -201,6 +202,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _getCurrentLocation() async {
     _locationLoading = true;
+    // Loading durumunu UI'a bildir
     notifyListeners();
 
     try {
@@ -208,6 +210,7 @@ class AppProvider extends ChangeNotifier {
       if (!serviceEnabled) {
         _locationError = 'Konum servisi kapalı';
         _locationLoading = false;
+        // Konum kapalıysa varsayılan (İstanbul) ile hesapla
         _calculatePrayerTimes();
         notifyListeners();
         return;
@@ -219,7 +222,7 @@ class AppProvider extends ChangeNotifier {
         if (permission == LocationPermission.denied) {
           _locationError = 'Konum izni reddedildi';
           _locationLoading = false;
-          _calculatePrayerTimes();
+          _calculatePrayerTimes(); // İzin yoksa varsayılan ile devam
           notifyListeners();
           return;
         }
@@ -228,18 +231,21 @@ class AppProvider extends ChangeNotifier {
       if (permission == LocationPermission.deniedForever) {
         _locationError = 'Konum izni kalıcı olarak reddedildi';
         _locationLoading = false;
-        _calculatePrayerTimes();
+        _calculatePrayerTimes(); // İzin yoksa varsayılan ile devam
         notifyListeners();
         return;
       }
 
+      // Konumu al
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
       );
 
+      // Koordinatları güncelle
       _latitude = position.latitude;
       _longitude = position.longitude;
 
+      // Adres Çözümleme (Bursa / Nilüfer gibi)
       try {
         final placemarks = await placemarkFromCoordinates(
           _latitude,
@@ -249,9 +255,10 @@ class AppProvider extends ChangeNotifier {
         if (placemarks.isNotEmpty) {
           final place = placemarks.first;
 
-          String? il = place.administrativeArea;
-          String? ilce = place.subAdministrativeArea;
+          String? il = place.administrativeArea; // Örn: Bursa
+          String? ilce = place.subAdministrativeArea; // Örn: Nilüfer
 
+          // Şehir ismini belirleme mantığı
           if (ilce != null && ilce.isNotEmpty && il != null && il.isNotEmpty) {
             if (ilce == il) {
               _cityName = il;
@@ -267,19 +274,63 @@ class AppProvider extends ChangeNotifier {
           _countryName = place.country ?? 'Türkiye';
         }
       } catch (e) {
+        // Geocoding hatası olsa bile koordinatlar elimizde, devam et.
         print("Adres hatası: $e");
         if (_cityName == 'İstanbul') _cityName = 'Konum Alındı';
       }
 
       _locationError = null;
+
+      // KRİTİK NOKTA: Koordinatlar güncellendi, şimdi vakitleri hesapla!
       _calculatePrayerTimes();
+
+      // Alarmları yeni vakitlere göre güncelle
       _scheduleAlarms();
     } catch (e) {
       _locationError = 'Konum alınamadı. Varsayılan konum kullanılıyor.';
-      _calculatePrayerTimes();
+      _calculatePrayerTimes(); // Hata durumunda da hesapla (varsayılan ile)
     }
 
     _locationLoading = false;
+    notifyListeners();
+  }
+
+  // Varsayılan Konum Yardımcısı
+  void _useDefaultLocation() {
+    _latitude = 41.0082; // İstanbul
+    _longitude = 28.9784;
+    _cityName = 'İstanbul';
+    _countryName = 'Türkiye';
+    _locationError = 'Konum alınamadı, İstanbul gösteriliyor.';
+  }
+
+  // Adres Çözümleme Yardımcısı
+  Future<void> _getAddressFromCoords() async {
+    try {
+      final placemarks = await placemarkFromCoordinates(_latitude, _longitude);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        if (place.administrativeArea != null) {
+          _cityName = place.administrativeArea!; // İl
+          if (place.subAdministrativeArea != null &&
+              place.subAdministrativeArea != place.administrativeArea) {
+            _cityName =
+                "${place.subAdministrativeArea} / ${place.administrativeArea}";
+          }
+        } else {
+          _cityName = 'Konum Alındı';
+        }
+        _countryName = place.country ?? 'Türkiye';
+      }
+    } catch (_) {
+      // Geocoding hatası önemsiz, koordinat var nasılsa
+    }
+  }
+
+  // Kod tekrarını önlemek için küçük bir yardımcı
+  void _stopLoadingAndNotify() {
+    _locationLoading = false;
+    _calculatePrayerTimes();
     notifyListeners();
   }
 
@@ -287,7 +338,7 @@ class AppProvider extends ChangeNotifier {
     _prayerTimes = PrayerTimeService.calculatePrayerTimes(
       latitude: _latitude,
       longitude: _longitude,
-      date: DateTime.now(),
+      date: DateTime.now().toLocal(),
       madhhab: _madhhab,
       sunniMethod: _sunniMethod,
     );
@@ -333,7 +384,7 @@ class AppProvider extends ChangeNotifier {
       final formatter = DateFormat("d MMMM yyyy", "tr_TR");
       return formatter.format(gregorianDate);
     } catch (e) {
-      return "17 Şubat 2026";
+      return "19 Şubat 2026";
     }
   }
 
@@ -356,11 +407,18 @@ class AppProvider extends ChangeNotifier {
 
       return ramadanFirstDay.hijriToGregorian(targetYear, 9, 1);
     } catch (e) {
+      // MANUEL TARİH DÜZELTMESİ:
       final now = DateTime.now();
-      if (now.isBefore(DateTime(2026, 2, 17))) {
-        return DateTime(2026, 2, 17);
+
+      // 2026 için İlk Oruç: 19 Şubat
+      // Eğer şu an 19 Şubat 2026'dan önceyse (veya o günse), bu tarihi döndür
+      if (now.isBefore(DateTime(2026, 2, 20))) {
+        // 19'u dahil etmek için 20'sinden önce dedik
+        return DateTime(2026, 2, 19);
       }
-      return DateTime(2027, 2, 7); // Yaklaşık
+
+      // Geçmişse 2027 tarihini döndür (Yaklaşık 8 Şubat 2027)
+      return DateTime(2027, 2, 8);
     }
   }
 
@@ -385,7 +443,9 @@ class AppProvider extends ChangeNotifier {
     try {
       HijriCalendar.setLocal('tr');
       final todayHijri = HijriCalendar.now();
-
+      print('HijriCalendar.now(): ${HijriCalendar.now()}');
+      print(
+          'hYear: ${todayHijri.hYear}, hMonth: ${todayHijri.hMonth}, hDay: ${todayHijri.hDay}');
       if (todayHijri.hMonth == 9) {
         _ramadanDay = todayHijri.hDay;
         _totalRamadanDays = todayHijri.lengthOfMonth;
@@ -405,7 +465,7 @@ class AppProvider extends ChangeNotifier {
     } catch (e) {
       final now = DateTime.now();
       DateTime ramadanStart =
-          (now.year == 2025) ? DateTime(2025, 3, 1) : DateTime(2026, 2, 17);
+          (now.year == 2025) ? DateTime(2025, 3, 1) : DateTime(2026, 2, 18);
       final diff = DateTime(now.year, now.month, now.day)
           .difference(ramadanStart)
           .inDays;
@@ -429,6 +489,8 @@ class AppProvider extends ChangeNotifier {
 
   void _calculateRamadanCountdown() {
     final now = DateTime.now();
+    // Saat/Dakika farkını yok saymak için sadece Yıl-Ay-Gün alıyoruz (Gece 00:00 yapar)
+    final todayStart = DateTime(now.year, now.month, now.day);
 
     if (_isRamadan) {
       _timeUntilRamadan = null;
@@ -438,10 +500,18 @@ class AppProvider extends ChangeNotifier {
     } else {
       // Ramazan başlangıcına kalan
       final startDate = _ramadanStartDate;
-      if (now.isBefore(startDate)) {
+
+      // Başlangıç tarihinin de sadece gün kısmını alalım
+      final startDateOnlyDate =
+          DateTime(startDate.year, startDate.month, startDate.day);
+
+      // KONTROL: Eğer 'Bugün', başlangıç tarihinden ÖNCEYSE veya EŞİTSE
+      // (Böylece 18 Şubat 23:59'da bile olsanız seneye atlamaz)
+      if (todayStart.isBefore(startDateOnlyDate) ||
+          todayStart.isAtSameMomentAs(startDateOnlyDate)) {
         _timeUntilRamadan = startDate.difference(now);
       } else {
-        // Ramazan geçmiş, gelecek yıla say
+        // Gerçekten tarih geçmişse (Örn: 20 Şubat olduysa) gelecek yıla bak
         final nextStart = _nextRamadanStartDate;
         _timeUntilRamadan = nextStart.difference(now);
       }

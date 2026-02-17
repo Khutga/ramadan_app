@@ -16,7 +16,7 @@ class PrayerTimeService {
 
     if (madhhab == MadhhabType.shia) {
       params = adhan.CalculationMethod.tehran.getParameters();
-      params.madhab = adhan.Madhab.shafi; 
+      params.madhab = adhan.Madhab.shafi;
     } else {
       switch (sunniMethod) {
         case SunniMethod.diyanet:
@@ -60,47 +60,47 @@ class PrayerTimeService {
     times.add(PrayerTimeModel(
       name: 'Sabah',
       nameArabic: 'الفجر',
-      time: prayerTimes.fajr,
+      time: prayerTimes.fajr.toLocal(),
     ));
 
     times.add(PrayerTimeModel(
       name: 'Güneş',
       nameArabic: 'الشروق',
-      time: prayerTimes.sunrise,
+      time: prayerTimes.sunrise.toLocal(),
     ));
 
     times.add(PrayerTimeModel(
       name: 'Öğle',
       nameArabic: 'الظهر',
-      time: prayerTimes.dhuhr,
+      time: prayerTimes.dhuhr.toLocal(),
     ));
 
     times.add(PrayerTimeModel(
       name: 'İkindi',
       nameArabic: 'العصر',
-      time: prayerTimes.asr,
+      time: prayerTimes.asr.toLocal(),
     ));
 
     if (madhhab == MadhhabType.shia) {
-      final maghribShia = prayerTimes.maghrib.add(const Duration(minutes: 17));
+      final maghribShia =
+          prayerTimes.maghrib.toLocal().add(const Duration(minutes: 17));
       times.add(PrayerTimeModel(
         name: 'Akşam (Mağrib)',
         nameArabic: 'المغرب',
         time: maghribShia,
       ));
-
     } else {
       times.add(PrayerTimeModel(
         name: 'Akşam (İftar)',
         nameArabic: 'المغرب',
-        time: prayerTimes.maghrib,
+        time: prayerTimes.maghrib.toLocal(),
       ));
     }
 
     times.add(PrayerTimeModel(
       name: 'Yatsı',
       nameArabic: 'العشاء',
-      time: prayerTimes.isha,
+      time: prayerTimes.isha.toLocal(),
     ));
 
     return times;
@@ -172,6 +172,8 @@ class PrayerTimeService {
       dateComponents,
       params,
     );
+    print(prayerTimes.fajr);
+    print(prayerTimes.fajr.isUtc);
     return prayerTimes.fajr.subtract(const Duration(minutes: 10));
   }
 
