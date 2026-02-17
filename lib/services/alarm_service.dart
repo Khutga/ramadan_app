@@ -15,6 +15,17 @@ class AlarmService {
   static AudioPlayer? _audioPlayer;
   static bool _initialized = false;
 
+  // =========================================================
+  // Her alarm modu için AYRI notification channel
+  // =========================================================
+  static const String _channelIdAdhan = 'ramadan_adhan_v6';
+  static const String _channelIdDefault = 'ramadan_default_v6';
+  static const String _channelIdVibration = 'ramadan_vibration_v6';
+  static const String _channelIdSilent = 'ramadan_silent_v6';
+  static const String _channelIdTest = 'ramadan_test_v6';
+  static const String _channelIdSahurAdhan = 'ramadan_sahur_adhan_v6';
+  static const String _channelIdSahur = 'ramadan_sahur_v6';
+
   static Future<void> initialize() async {
     if (_initialized) return;
 
@@ -25,31 +36,98 @@ class AlarmService {
         AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
+      // Eski kanalları temizle
+      final oldChannels = [
+        'ramadan_alarms_v4', 'ramadan_test_alarms_v4', 'ramadan_sahur_channel_v4',
+        'ramadan_adhan_v5', 'ramadan_default_v5', 'ramadan_vibration_v5',
+        'ramadan_silent_v5', 'ramadan_test_v5', 'ramadan_sahur_adhan_v5',
+        'ramadan_sahur_v5',
+      ];
+      for (final ch in oldChannels) {
+        try {
+          await androidPlugin.deleteNotificationChannel(ch);
+        } catch (_) {}
+      }
+
+      // ---- Ezan sesli kanal ----
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
-          'ramadan_alarms_v4',
-          'Ramazan Alarmları',
-          description: 'İftar, Sahur ve Namaz vakti bildirimleri',
+          _channelIdAdhan,
+          'Ezan Alarmları',
+          description: 'Ezan sesi ile namaz vakti bildirimleri',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('adhan_short'),
+          enableVibration: true,
+        ),
+      );
+
+      // ---- Varsayılan bildirim kanalı ----
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelIdDefault,
+          'Namaz Vakti Bildirimleri',
+          description: 'Standart bildirim sesi ile namaz vakti bildirimleri',
           importance: Importance.max,
           playSound: true,
           enableVibration: true,
         ),
       );
 
+      // ---- Titreşim kanalı ----
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
-          'ramadan_test_alarms_v4',
+          _channelIdVibration,
+          'Titreşim Bildirimleri',
+          description: 'Yalnızca titreşim ile uyarı',
+          importance: Importance.max,
+          playSound: false,
+          enableVibration: true,
+        ),
+      );
+
+      // ---- Sessiz kanal ----
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelIdSilent,
+          'Sessiz Bildirimler',
+          description: 'Sessiz bildirim',
+          importance: Importance.low,
+          playSound: false,
+          enableVibration: false,
+        ),
+      );
+
+      // ---- Test kanalı (ezan sesli) ----
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelIdTest,
           'Test Alarmları',
           description: 'Alarm test bildirimleri',
           importance: Importance.max,
           playSound: true,
+          sound: RawResourceAndroidNotificationSound('adhan_short'),
           enableVibration: true,
         ),
       );
 
+      // ---- Sahur ezan kanalı ----
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
-          'ramadan_sahur_channel_v4',
+          _channelIdSahurAdhan,
+          'Sahur Ezan Alarmı',
+          description: 'Sahura kalkma ezan bildirimi',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('adhan_short'),
+          enableVibration: true,
+        ),
+      );
+
+      // ---- Sahur varsayılan kanalı ----
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelIdSahur,
           'Sahur Kalkma Alarmı',
           description: 'Sahura kalkma bildirimi',
           importance: Importance.max,
@@ -64,6 +142,7 @@ class AlarmService {
     }
 
     _initialized = true;
+    print('[AlarmService] ✅ Başlatıldı');
   }
 
   static String _getLocalTimezone() {
@@ -85,17 +164,30 @@ class AlarmService {
     return 'UTC';
   }
 
+  // =========================================================
+  // Alarm moduna göre doğru channel ve ses ayarı
+  // =========================================================
   static AndroidNotificationDetails _buildAndroidDetails(
     AlarmMode mode, {
-    String channelId = 'ramadan_alarms_v4',
-    String channelName = 'Ramazan Alarmları',
+    bool isSahur = false,
+    bool isTest = false,
   }) {
     switch (mode) {
       case AlarmMode.adhan:
+        final channelId = isTest
+            ? _channelIdTest
+            : isSahur
+                ? _channelIdSahurAdhan
+                : _channelIdAdhan;
+        final channelName = isTest
+            ? 'Test Alarmları'
+            : isSahur
+                ? 'Sahur Ezan Alarmı'
+                : 'Ezan Alarmları';
         return AndroidNotificationDetails(
           channelId,
           channelName,
-          channelDescription: 'Bildirim',
+          channelDescription: 'Ezan sesi ile bildirim',
           importance: Importance.max,
           priority: Priority.max,
           playSound: true,
@@ -107,11 +199,12 @@ class AlarmService {
           autoCancel: true,
           timeoutAfter: 30000,
         );
+
       case AlarmMode.vibration:
         return AndroidNotificationDetails(
-          channelId,
-          channelName,
-          channelDescription: 'Bildirim',
+          isSahur ? _channelIdSahur : _channelIdVibration,
+          isSahur ? 'Sahur Kalkma Alarmı' : 'Titreşim Bildirimleri',
+          channelDescription: 'Titreşim bildirimi',
           importance: Importance.max,
           priority: Priority.max,
           playSound: false,
@@ -120,40 +213,52 @@ class AlarmService {
           fullScreenIntent: true,
           category: AndroidNotificationCategory.alarm,
         );
+
       case AlarmMode.silent:
         return AndroidNotificationDetails(
-          channelId,
-          channelName,
-          channelDescription: 'Bildirim',
+          _channelIdSilent,
+          'Sessiz Bildirimler',
+          channelDescription: 'Sessiz bildirim',
           importance: Importance.low,
           priority: Priority.low,
           playSound: false,
           enableVibration: false,
         );
+
       case AlarmMode.notification:
       default:
+        final channelId = isTest
+            ? _channelIdDefault
+            : isSahur
+                ? _channelIdSahur
+                : _channelIdDefault;
+        final channelName = isTest
+            ? 'Namaz Vakti Bildirimleri'
+            : isSahur
+                ? 'Sahur Kalkma Alarmı'
+                : 'Namaz Vakti Bildirimleri';
         return AndroidNotificationDetails(
           channelId,
           channelName,
           channelDescription: 'Bildirim',
           importance: Importance.max,
-          priority: Priority.high,
+          priority: Priority.max,
           playSound: true,
           enableVibration: true,
           fullScreenIntent: true,
           category: AndroidNotificationCategory.alarm,
+          visibility: NotificationVisibility.public,
         );
     }
   }
 
   static NotificationDetails _buildDetails(
     AlarmMode mode, {
-    String channelId = 'ramadan_alarms_v4',
-    String channelName = 'Ramazan Alarmları',
+    bool isSahur = false,
+    bool isTest = false,
   }) {
     return NotificationDetails(
-      android: _buildAndroidDetails(mode,
-          channelId: channelId, channelName: channelName),
+      android: _buildAndroidDetails(mode, isSahur: isSahur, isTest: isTest),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
@@ -161,6 +266,94 @@ class AlarmService {
         interruptionLevel: InterruptionLevel.timeSensitive,
       ),
     );
+  }
+
+  // =========================================================
+  // ANLIK TEST - Hemen bildirim gönder (debug için)
+  // =========================================================
+  static Future<bool> sendInstantTestNotification() async {
+    try {
+      await _notifications.show(
+        900,
+        '✅ Bildirim Testi Başarılı!',
+        'Bu bildirimi görüyorsanız bildirim izinleri doğru çalışıyor.',
+        _buildDetails(AlarmMode.notification, isTest: true),
+      );
+      print('[AlarmService] ✅ Anlık test bildirimi gönderildi');
+      return true;
+    } catch (e) {
+      print('[AlarmService] ❌ Anlık test BAŞARISIZ: $e');
+      return false;
+    }
+  }
+
+  // =========================================================
+  // ANLIK EZAN TESTİ
+  // =========================================================
+  static Future<bool> sendInstantAdhanNotification() async {
+    try {
+      await _notifications.show(
+        901,
+        '🕌 Ezan Sesi Testi',
+        'Ezan sesi çalıyor olmalı...',
+        _buildDetails(AlarmMode.adhan, isTest: true),
+      );
+      print('[AlarmService] ✅ Ezan test bildirimi gönderildi');
+      return true;
+    } catch (e) {
+      print('[AlarmService] ❌ Ezan test BAŞARISIZ: $e');
+      return false;
+    }
+  }
+
+  // =========================================================
+  // İZİN DURUMUNU KONTROL ET (detaylı)
+  // =========================================================
+  static Future<Map<String, bool>> checkAllPermissions() async {
+    final result = <String, bool>{};
+
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    if (android != null) {
+      final notifEnabled = await android.areNotificationsEnabled();
+      result['notifications'] = notifEnabled ?? false;
+
+      try {
+        final exactAlarm = await android.canScheduleExactNotifications();
+        result['exactAlarms'] = exactAlarm ?? false;
+      } catch (e) {
+        result['exactAlarms'] = false;
+      }
+    } else {
+      result['notifications'] = true;
+      result['exactAlarms'] = true;
+    }
+
+    result['initialized'] = _initialized;
+    return result;
+  }
+
+  // =========================================================
+  // DEBUG BİLGİSİ
+  // =========================================================
+  static Future<String> getDebugInfo() async {
+    final perms = await checkAllPermissions();
+    final pending = await _notifications.pendingNotificationRequests();
+
+    final buffer = StringBuffer();
+    buffer.writeln('=== ALARM DEBUG ===');
+    buffer.writeln('Initialized: ${perms['initialized']}');
+    buffer.writeln('Bildirim izni: ${perms['notifications']}');
+    buffer.writeln('Exact alarm izni: ${perms['exactAlarms']}');
+    buffer.writeln('Timezone: ${tz.local.name}');
+    buffer.writeln('Bekleyen alarm: ${pending.length}');
+
+    for (final p in pending) {
+      buffer.writeln('  [${p.id}] ${p.title}');
+    }
+
+    return buffer.toString();
   }
 
   // =========================================================
@@ -173,14 +366,19 @@ class AlarmService {
     required DateTime scheduledTime,
     required AlarmMode mode,
   }) async {
-    if (scheduledTime.isBefore(DateTime.now())) return;
+    if (scheduledTime.isBefore(DateTime.now())) {
+      print('[AlarmService] ⏭️ Geçmiş: $title @ $scheduledTime');
+      return;
+    }
 
     try {
+      final tzTime = tz.TZDateTime.from(scheduledTime, tz.local);
+
       await _notifications.zonedSchedule(
         id,
         title,
         body,
-        tz.TZDateTime.from(scheduledTime, tz.local),
+        tzTime,
         _buildDetails(mode),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: null,
@@ -188,20 +386,27 @@ class AlarmService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
 
-      if (mode == AlarmMode.adhan) {
-        await AndroidAlarmManager.oneShotAt(
-          scheduledTime,
-          id + 10000,
-          _playAdhanCallback,
-          exact: true,
-          wakeup: true,
-          allowWhileIdle: true,
-          rescheduleOnReboot: true,
-        );
-      }
-      print('[AlarmService] Kuruldu: $title @ $scheduledTime (id:$id)');
+      print('[AlarmService] ✅ Kuruldu: $title @ $scheduledTime (id:$id)');
     } catch (e) {
-      print('[AlarmService] HATA scheduleAlarm: $e');
+      print('[AlarmService] ❌ HATA: $e');
+      // Fallback: inexact
+      try {
+        final tzTime = tz.TZDateTime.from(scheduledTime, tz.local);
+        await _notifications.zonedSchedule(
+          id,
+          title,
+          body,
+          tzTime,
+          _buildDetails(mode),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: null,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+        print('[AlarmService] ⚠️ Inexact olarak kuruldu: $title');
+      } catch (e2) {
+        print('[AlarmService] ❌ Fallback de BAŞARISIZ: $e2');
+      }
     }
   }
 
@@ -214,6 +419,8 @@ class AlarmService {
     required Map<String, bool> alarmEnabled,
   }) async {
     await cancelAllAlarms();
+
+    int scheduledCount = 0;
 
     for (int i = 0; i < prayers.length; i++) {
       final prayer = prayers[i];
@@ -239,7 +446,10 @@ class AlarmService {
         scheduledTime: prayer.time,
         mode: mode,
       );
+      scheduledCount++;
     }
+
+    print('[AlarmService] 📊 Toplam $scheduledCount alarm kuruldu');
   }
 
   // =========================================================
@@ -253,7 +463,6 @@ class AlarmService {
     if (scheduledTime.isBefore(DateTime.now())) return;
 
     await _notifications.cancel(100);
-    await AndroidAlarmManager.cancel(100 + 10000);
 
     try {
       await _notifications.zonedSchedule(
@@ -261,34 +470,20 @@ class AlarmService {
         'Sahura Kalkma Zamanı! ⏰',
         'İmsak vaktine $offsetMinutes dakika kaldı.',
         tz.TZDateTime.from(scheduledTime, tz.local),
-        _buildDetails(mode,
-            channelId: 'ramadan_sahur_alarm_v4',
-            channelName: 'Sahur Kalkma Alarmı'),
+        _buildDetails(mode, isSahur: true),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: null,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
-
-      if (mode == AlarmMode.adhan) {
-        await AndroidAlarmManager.oneShotAt(
-          scheduledTime,
-          100 + 10000,
-          _playAdhanCallback,
-          exact: true,
-          wakeup: true,
-          allowWhileIdle: true,
-          rescheduleOnReboot: true,
-        );
-      }
+      print('[AlarmService] ✅ Sahur alarmı: $scheduledTime');
     } catch (e) {
-      print('[AlarmService] HATA sahurPreAlarm: $e');
+      print('[AlarmService] ❌ Sahur alarm HATA: $e');
     }
   }
 
   // =========================================================
-  // TEST ALARMI  -  Future.delayed + show()
-  // zonedSchedule yerine bu yöntem %100 güvenilir
+  // TEST ALARMI (zamanlanmış)
   // =========================================================
   static Future<void> scheduleTestAlarm({
     required AlarmMode mode,
@@ -297,48 +492,37 @@ class AlarmService {
     await _notifications.cancel(999);
     await _notifications.cancel(998);
 
-    // 1) Anında onay bildirimi gönder (kullanıcı görsün)
+    final scheduledTime = DateTime.now().add(Duration(seconds: delaySeconds));
+
+    // Anında onay
     try {
       await _notifications.show(
         998,
         '⏱️ Test Alarmı Kuruldu',
         '$delaySeconds saniye sonra "${mode.displayName}" bildirim gelecek.',
-        _buildDetails(
-          AlarmMode.silent,
-          channelId: 'ramadan_test_alarms_v4',
-          channelName: 'Test Alarmları',
-        ),
+        _buildDetails(AlarmMode.notification),
       );
     } catch (e) {
-      print('[AlarmService] Onay bildirimi hatası: $e');
+      print('[AlarmService] Onay hatası: $e');
     }
 
-    // 2) Gecikme sonrası asıl test bildirimi
-    Future.delayed(Duration(seconds: delaySeconds), () async {
-      try {
-        // Önce onay bildirimini kaldır
-        await _notifications.cancel(998);
-
-        await _notifications.show(
-          999,
-          '🔔 Test Alarmı',
-          '${mode.displayName} modunda test alarmı çalıyor!',
-          _buildDetails(
-            mode,
-            channelId: 'ramadan_test_alarms_v4',
-            channelName: 'Test Alarmları',
-          ),
-        );
-
-        if (mode == AlarmMode.adhan) {
-          _playAdhanCallback();
-        }
-
-        print('[AlarmService] Test alarmı tetiklendi! (${mode.displayName})');
-      } catch (e) {
-        print('[AlarmService] Test alarm tetikleme hatası: $e');
-      }
-    });
+    // Zamanlanmış test
+    try {
+      await _notifications.zonedSchedule(
+        999,
+        '🔔 Test Alarmı',
+        '${mode.displayName} modunda test alarmı çalıyor!',
+        tz.TZDateTime.from(scheduledTime, tz.local),
+        _buildDetails(mode, isTest: true),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: null,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      print('[AlarmService] ✅ Test alarmı: $scheduledTime');
+    } catch (e) {
+      print('[AlarmService] ❌ Test alarm HATA: $e');
+    }
   }
 
   // =========================================================
@@ -346,43 +530,17 @@ class AlarmService {
   // =========================================================
   static Future<void> cancelAlarm(int id) async {
     await _notifications.cancel(id);
-    await AndroidAlarmManager.cancel(id + 10000);
   }
 
   static Future<void> cancelAllAlarms() async {
     await _notifications.cancelAll();
-    for (int i = 0; i < 20; i++) {
-      await AndroidAlarmManager.cancel(i + 10000);
-    }
-    await AndroidAlarmManager.cancel(100 + 10000);
   }
 
   // =========================================================
-  // EZAN SESİ
+  // EZAN SESİ — Sadece uygulama içi test
   // =========================================================
-  @pragma('vm:entry-point')
-  static Future<void> _playAdhanCallback() async {
-    final player = AudioPlayer();
-    try {
-      await player.setReleaseMode(ReleaseMode.loop);
-      await player.setSource(AssetSource('sounds/adhan_short.mp3'));
-      await player.resume();
-
-      // Wait 14 seconds (since audio is 13s)
-      await Future.delayed(const Duration(seconds: 14));
-
-      await player.stop();
-      await player.dispose();
-    } catch (e) {
-      print('[AlarmService] Background Ezan Error: $e');
-    }
-  }
-
   static Future<void> testAdhanSound() async {
-    // 1. Cancel any previous stop timer so it doesn't kill the new sound
     _stopTimer?.cancel();
-
-    // 2. Stop any existing player safely
     await stopAdhan();
 
     try {
@@ -391,7 +549,6 @@ class AlarmService {
       await _audioPlayer!.setSource(AssetSource('sounds/adhan_short.mp3'));
       await _audioPlayer!.resume();
 
-      // 3. Schedule stop after 14 seconds (Audio is 13s)
       _stopTimer = Timer(const Duration(seconds: 14), () {
         stopAdhan();
       });
@@ -409,7 +566,7 @@ class AlarmService {
         await _audioPlayer!.stop();
         await _audioPlayer!.dispose();
       } catch (e) {
-        // Silently ignore "Player has not yet been created" errors
+        // Sessizce geç
       } finally {
         _audioPlayer = null;
       }

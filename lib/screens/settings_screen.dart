@@ -57,6 +57,11 @@ class SettingsScreen extends StatelessWidget {
                   _buildSahurAlarmCard(context, provider),
                   const SizedBox(height: 32),
 
+                  // ===== YENİ: DEBUG BÖLÜMÜ =====
+                  _buildSectionHeader('BİLDİRİM TEŞHİS'),
+                  const _DebugCard(),
+                  const SizedBox(height: 32),
+
                   _buildSectionHeader('HAKKINDA'),
                   _buildInfoCard(),
 
@@ -467,7 +472,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   // =========================================================
-  // SAHUR ALARMI KARTI  (Overflow düzeltildi)
+  // SAHUR ALARMI KARTI
   // =========================================================
   Widget _buildSahurAlarmCard(BuildContext context, AppProvider provider) {
     final imsakTime = provider.imsakTime;
@@ -482,7 +487,6 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Başlık satırı
           Row(
             children: [
               Container(
@@ -532,7 +536,6 @@ class SettingsScreen extends StatelessWidget {
             const Divider(color: Colors.white10),
             const SizedBox(height: 12),
 
-            // Süre ayarlama
             const Text(
               'İmsak\'tan kaç dakika önce?',
               style: TextStyle(
@@ -573,7 +576,6 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Saat göstergesi - dikey düzen (overflow yok)
             if (imsakTime != null && sahurAlarmTime != null)
               Container(
                 width: double.infinity,
@@ -584,7 +586,6 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Alarm zamanı
                     Row(
                       children: [
                         const Text('⏰',
@@ -613,7 +614,6 @@ class SettingsScreen extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Divider(color: Colors.white10, height: 1),
                     ),
-                    // İmsak zamanı
                     Row(
                       children: [
                         const Text('🍽️',
@@ -642,7 +642,6 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
 
-            // İmsak'tan sonraysa uyarı
             if (sahurAlarmTime != null &&
                 imsakTime != null &&
                 sahurAlarmTime.isAfter(imsakTime))
@@ -678,7 +677,6 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 14),
 
-            // Alarm modu
             const Text(
               'Alarm Modu',
               style: TextStyle(
@@ -833,6 +831,236 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =========================================================
+// DEBUG KARTI - BİLDİRİM TEŞHİS
+// =========================================================
+class _DebugCard extends StatefulWidget {
+  const _DebugCard();
+
+  @override
+  State<_DebugCard> createState() => _DebugCardState();
+}
+
+class _DebugCardState extends State<_DebugCard> {
+  String _debugInfo = '';
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bug_report,
+                    color: Colors.orange, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bildirim Teşhis',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Bildirimlerin çalışıp çalışmadığını test edin',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Anlık bildirim test butonu
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _loading
+                  ? null
+                  : () async {
+                      setState(() => _loading = true);
+                      final result =
+                          await AlarmService.sendInstantTestNotification();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result
+                                ? '✅ Bildirim gönderildi! Yukarıda görüyor musunuz?'
+                                : '❌ Bildirim gönderilemedi! İzin sorunu olabilir.'),
+                            backgroundColor:
+                                result ? AppColors.success : AppColors.danger,
+                          ),
+                        );
+                        setState(() => _loading = false);
+                      }
+                    },
+              icon: const Icon(Icons.notifications_active, size: 18),
+              label: const Text('Anlık Bildirim Gönder'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.primaryDark,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Anlık ezan test butonu
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _loading
+                  ? null
+                  : () async {
+                      setState(() => _loading = true);
+                      final result =
+                          await AlarmService.sendInstantAdhanNotification();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result
+                                ? '🕌 Ezan bildirimi gönderildi! Ses geliyor mu?'
+                                : '❌ Ezan bildirimi gönderilemedi!'),
+                            backgroundColor:
+                                result ? AppColors.success : AppColors.danger,
+                          ),
+                        );
+                        setState(() => _loading = false);
+                      }
+                    },
+              icon: const Text('🕌', style: TextStyle(fontSize: 18)),
+              label: const Text('Anlık Ezan Sesi Testi'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                side: BorderSide(
+                  color: AppColors.accent.withOpacity(0.5),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Debug bilgi butonu
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () async {
+                final info = await AlarmService.getDebugInfo();
+                setState(() => _debugInfo = info);
+              },
+              icon: const Icon(Icons.info_outline, size: 18),
+              label: const Text('İzin & Alarm Durumunu Göster'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+              ),
+            ),
+          ),
+
+          if (_debugInfo.isNotEmpty)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _debugInfo,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'Courier',
+                  color: Colors.greenAccent,
+                  height: 1.5,
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 8),
+
+          // Samsung uyarısı
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.phone_android,
+                        color: AppColors.warning, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'Samsung Kullanıcıları',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '1. Ayarlar > Uygulamalar > Ramazan Modu > Pil > Kısıtlanmamış\n'
+                  '2. Ayarlar > Pil > Arka plan kullanım sınırları > Uyuyan uygulamalardan ÇIKARIN\n'
+                  '3. Ayarlar > Uygulamalar > Ramazan Modu > Bildirimler > Tüm kanalları AÇIN\n'
+                  '4. Ayarlar > Uygulamalar > Ramazan Modu > Alarm ve hatırlatıcılar > İZİN VERİN',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary.withOpacity(0.9),
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
