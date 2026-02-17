@@ -17,9 +17,10 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-HijriCalendar.setLocal('tr');
+  HijriCalendar.setLocal('tr');
   await initializeDateFormatting('tr_TR', null);
-await MobileAds.instance.initialize();
+  await MobileAds.instance.initialize();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -27,8 +28,10 @@ await MobileAds.instance.initialize();
     ),
   );
 
+  // Alarm Manager başlat
   await AndroidAlarmManager.initialize();
 
+  // Bildirim eklentisini başlat
   const AndroidInitializationSettings androidSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const DarwinInitializationSettings iosSettings =
@@ -41,10 +44,23 @@ await MobileAds.instance.initialize();
     android: androidSettings,
     iOS: iosSettings,
   );
+
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
-    onDidReceiveNotificationResponse: (details) {},
+    onDidReceiveNotificationResponse: (details) {
+      // Bildirime tıklanınca yapılacak işlem
+      print('[Notification] Tıklandı: ${details.payload}');
+    },
   );
+
+  // Android bildirim izinlerini iste
+  final androidPlugin = flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+  if (androidPlugin != null) {
+    await androidPlugin.requestNotificationsPermission();
+    await androidPlugin.requestExactAlarmsPermission();
+  }
 
   runApp(const RamadanApp());
 }

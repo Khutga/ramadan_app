@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:ramadan_app/models/prayer_model.dart';
-// Projenizdeki diğer importlar...
 import '../providers/app_provider.dart';
 import '../utils/theme.dart';
 import '../widgets/countdown_widget.dart';
 import '../widgets/quran_verse_card.dart';
-// import '../widgets/prayer_mini_card.dart'; // Bu widget'ı içeride custom yaptık, gerekirse açabilirsiniz.
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,17 +15,13 @@ class HomeScreen extends StatelessWidget {
     return Consumer<AppProvider>(
       builder: (context, provider, _) {
         return Scaffold(
-          // Stack kullanarak arka plana dekoratif elementler ekliyoruz
           body: Stack(
             children: [
-              // 1. KATMAN: Arka Plan Gradient
               Container(
                 decoration: const BoxDecoration(
-                  gradient: AppColors.primaryGradient, // Mevcut gradientiniz
+                  gradient: AppColors.primaryGradient,
                 ),
               ),
-
-              // 2. KATMAN: Dekoratif Arka Plan Eşyaları (Güneş/Ay Halesi)
               Positioned(
                 top: -100,
                 right: -100,
@@ -47,18 +41,15 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // 3. KATMAN: Ana İçerik
               SafeArea(
                 child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(), // Yaylanma efekti
+                  physics: const BouncingScrollPhysics(),
                   slivers: [
-                    // Header
                     SliverToBoxAdapter(
                       child: _buildHeader(context, provider),
                     ),
 
-                    // Geri Sayım (Countdown)
+                    // Sıradaki vakte gerisayım
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -69,12 +60,17 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // İftar / Sahur Kartları (Önceki tasarım korundu)
+                    // İftar & Sahur gerisayım - HER ZAMAN göster
+                    SliverToBoxAdapter(
+                      child: _buildIftarSahurCountdown(provider),
+                    ),
+
+                    // İftar / Sahur Saat Kartları
                     SliverToBoxAdapter(
                       child: _buildIftarSahurCards(provider),
                     ),
 
-                    // Vakit Çizelgesi (Önceki tasarım korundu)
+                    // Vakit Çizelgesi
                     SliverToBoxAdapter(
                       child: _buildPrayerTimesPreview(provider),
                     ),
@@ -90,11 +86,10 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Ramazan İlerlemesi (YENİLENDİ)
-                    if (provider.ramadanDay > 0)
-                      SliverToBoxAdapter(
-                        child: _buildRamadanProgress(provider),
-                      ),
+                    // Ramazan İlerlemesi / Geri Sayımı
+                    SliverToBoxAdapter(
+                      child: _buildRamadanSection(provider),
+                    ),
 
                     const SliverToBoxAdapter(
                       child: SizedBox(height: 100),
@@ -109,10 +104,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- YENİLENMİŞ HEADER TASARIMI ---
   Widget _buildHeader(BuildContext context, AppProvider provider) {
     final now = DateTime.now();
-    // Konum listesi temizleme mantığı
     final locationText = [provider.cityName, provider.countryName]
         .where((text) => text != null && text.isNotEmpty)
         .join(', ');
@@ -122,38 +115,36 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Üst Satır: Selam ve Mezhep Seçimi
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDate(now).toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.7),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDate(now).toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Hayırlı Ramazanlar',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          Colors.white, // Beyaz yaparak okunabilirliği artırdık
-                      letterSpacing: -0.5,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Hayırlı Ramazanlar',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-
-              // Mezhep Badge (Daha şık)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -163,7 +154,9 @@ class HomeScreen extends StatelessWidget {
                   border: Border.all(color: Colors.white.withOpacity(0.2)),
                 ),
                 child: Text(
-                  provider.madhhab.displayName,
+                  provider.madhhab == MadhhabType.shia
+                      ? 'Caferi'
+                      : provider.sunniMethod.displayName,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -173,25 +166,17 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          // Konum Hapı (Location Pill)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2), // Hafif koyu zemin
+              color: Colors.black.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.location_on_rounded,
-                  size: 16,
-                  color: AppColors.accent, // İkon rengini vurguladık
-                ),
+                const Icon(Icons.location_on_rounded,
+                    size: 16, color: AppColors.accent),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -206,26 +191,19 @@ class HomeScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    mainAxisSize:
-                        MainAxisSize.max, // Sadece yazı kadar yer kaplasın
-                    children: [
-                      const Icon(Icons.calendar_month_rounded,
-                          color: AppColors.accent, // Altın sarısı ikon
-                          size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Başlangıç: ${provider.ramadanStartDateStr}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                const SizedBox(width: 12),
+                const Icon(Icons.calendar_month_rounded,
+                    color: AppColors.accent, size: 16),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    provider.ramadanStartDateStr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -236,35 +214,141 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // =========================================================
+  // İFTAR & SAHUR GERİ SAYIMI - HER ZAMAN GÖSTER
+  // =========================================================
+  Widget _buildIftarSahurCountdown(AppProvider provider) {
+    final timeUntilIftar = provider.timeUntilIftar;
+    final timeUntilSahur = provider.timeUntilSahur;
+
+    // Her ikisi de geçmişse gösterme
+    if (timeUntilIftar == null && timeUntilSahur == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(
+        children: [
+          // İftar gerisayımı
+          if (timeUntilIftar != null)
+            Expanded(
+              child: _buildCompactCountdown(
+                title: 'İftara Kalan',
+                duration: timeUntilIftar,
+                icon: Icons.wb_twilight_rounded,
+                gradientColors: [
+                  const Color(0xFFFF512F).withOpacity(0.2),
+                  const Color(0xFFDD2476).withOpacity(0.15),
+                ],
+                borderColor: const Color(0xFFFF512F).withOpacity(0.3),
+                timeColor: const Color(0xFFFF8A65),
+              ),
+            ),
+
+          if (timeUntilIftar != null && timeUntilSahur != null)
+            const SizedBox(width: 12),
+
+          // Sahur gerisayımı
+          if (timeUntilSahur != null)
+            Expanded(
+              child: _buildCompactCountdown(
+                title: 'Sahura Kalan',
+                duration: timeUntilSahur,
+                icon: Icons.nights_stay_rounded,
+                gradientColors: [
+                  const Color(0xFF141E30).withOpacity(0.4),
+                  const Color(0xFF243B55).withOpacity(0.3),
+                ],
+                borderColor: const Color(0xFF5C6BC0).withOpacity(0.3),
+                timeColor: const Color(0xFF90CAF9),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactCountdown({
+    required String title,
+    required Duration duration,
+    required IconData icon,
+    required List<Color> gradientColors,
+    required Color borderColor,
+    required Color timeColor,
+  }) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    final timeStr =
+        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: Colors.white.withOpacity(0.8)),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              timeStr,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: timeColor,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     final months = [
-      '',
-      'Ocak',
-      'Şubat',
-      'Mart',
-      'Nisan',
-      'Mayıs',
-      'Haziran',
-      'Temmuz',
-      'Ağustos',
-      'Eylül',
-      'Ekim',
-      'Kasım',
-      'Aralık'
+      '', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
     ];
     final days = [
-      'Pazartesi',
-      'Salı',
-      'Çarşamba',
-      'Perşembe',
-      'Cuma',
-      'Cumartesi',
-      'Pazar'
+      'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe',
+      'Cuma', 'Cumartesi', 'Pazar'
     ];
     return '${date.day} ${months[date.month]} ${date.year}, ${days[date.weekday - 1]}';
   }
 
-  // --- İFTAR/SAHUR KARTLARI (KORUNDU & ENTEGRE EDİLDİ) ---
+  // =========================================================
+  // İFTAR / SAHUR SAAT KARTLARI
+  // =========================================================
   Widget _buildIftarSahurCards(AppProvider provider) {
     DateTime? iftarTime;
     DateTime? sahurTime;
@@ -346,11 +430,8 @@ class HomeScreen extends StatelessWidget {
             bottom: -15,
             child: Transform.rotate(
               angle: 0.2,
-              child: Icon(
-                icon,
-                size: 90,
-                color: Colors.white.withOpacity(0.15),
-              ),
+              child: Icon(icon, size: 90,
+                  color: Colors.white.withOpacity(0.15)),
             ),
           ),
           Padding(
@@ -404,7 +485,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- VAKİT ÇİZELGESİ (KORUNDU) ---
+  // =========================================================
+  // VAKİT ÇİZELGESİ
+  // =========================================================
   Widget _buildPrayerTimesPreview(AppProvider provider) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -436,12 +519,9 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              color:
-                  AppColors.cardBg.withOpacity(0.8), // Arka plana biraz opaklık
+              color: AppColors.cardBg.withOpacity(0.8),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.grey.withOpacity(0.1),
-              ),
+              border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
             child: Column(
               children: provider.prayerTimes.map((prayer) {
@@ -545,7 +625,132 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- RAMAZAN İLERLEMESİ (YENİLENDİ) ---
+  // =========================================================
+  // RAMAZAN BÖLÜMÜ
+  // =========================================================
+  Widget _buildRamadanSection(AppProvider provider) {
+    if (provider.isRamadan && provider.ramadanDay > 0) {
+      return _buildRamadanProgress(provider);
+    } else {
+      return _buildRamadanCountdown(provider);
+    }
+  }
+
+  Widget _buildRamadanCountdown(AppProvider provider) {
+    final countdown = provider.timeUntilRamadan;
+    if (countdown == null) return const SizedBox.shrink();
+
+    final days = countdown.inDays;
+    final hours = countdown.inHours.remainder(24);
+    final minutes = countdown.inMinutes.remainder(60);
+
+    final title = provider.isBeforeRamadan
+        ? 'Ramazan\'a Kalan'
+        : 'Gelecek Ramazan\'a Kalan';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A2940), Color(0xFF0F1E30)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border:
+              Border.all(color: AppColors.accent.withOpacity(0.2)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '🌙 $title',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.accent,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildCountdownUnit(days.toString(), 'Gün'),
+                _buildCountdownSep(),
+                _buildCountdownUnit(
+                    hours.toString().padLeft(2, '0'), 'Saat'),
+                _buildCountdownSep(),
+                _buildCountdownUnit(
+                    minutes.toString().padLeft(2, '0'), 'Dakika'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Başlangıç: ${provider.ramadanStartDateStr}',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountdownUnit(String value, String label) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppColors.primaryDark.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(12),
+            border:
+                Border.all(color: AppColors.accent.withOpacity(0.15)),
+          ),
+          child: Center(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.accent,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: AppColors.textSecondary.withOpacity(0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCountdownSep() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 6),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 16),
+        child: Text(
+          ':',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.accent,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRamadanProgress(AppProvider provider) {
     final progress = provider.ramadanDay / provider.totalRamadanDays;
 
@@ -554,7 +759,7 @@ class HomeScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.cardBg, // Kart renginiz
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -566,7 +771,6 @@ class HomeScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Sol Taraf: Gün Sayacı (Büyük)
             Container(
               width: 60,
               height: 60,
@@ -599,8 +803,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-
-            // Sağ Taraf: İlerleme Çubuğu ve Bilgi
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,7 +823,8 @@ class HomeScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary.withOpacity(0.5),
+                          color:
+                              AppColors.textPrimary.withOpacity(0.5),
                         ),
                       )
                     ],
@@ -629,7 +832,6 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   Stack(
                     children: [
-                      // Arka Plan Çubuğu
                       Container(
                         height: 12,
                         decoration: BoxDecoration(
@@ -637,7 +839,6 @@ class HomeScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      // Dolu Kısım (Gradientli)
                       LayoutBuilder(
                         builder: (context, constraints) {
                           return Container(
@@ -645,12 +846,17 @@ class HomeScreen extends StatelessWidget {
                             width: constraints.maxWidth * progress,
                             decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [AppColors.accent, Color(0xFFFFA000)],
+                                  colors: [
+                                    AppColors.accent,
+                                    Color(0xFFFFA000)
+                                  ],
                                 ),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius:
+                                    BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.4),
+                                    color: AppColors.accent
+                                        .withOpacity(0.4),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   )
