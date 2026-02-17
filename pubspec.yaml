@@ -25,6 +25,8 @@ dependencies:
   hijri: ^3.0.0
   google_fonts: ^6.1.0
   animated_text_kit: ^4.2.2
+  flutter_launcher_icons: ^0.14.4
+  google_mobile_ads: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -35,3 +37,20 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png" # İkon dosyanızın yolu
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#hex_code"
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 48
+  
+  # İŞTE BEYAZ ÇERÇEVEYİ YOK EDEN AYARLAR:
+  adaptive_icon_background: "#11162B" # Görselinizdeki koyu lacivert tonu
+  adaptive_icon_foreground: "assets/icon/icon.png"

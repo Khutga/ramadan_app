@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/prayer_model.dart';
@@ -11,10 +13,12 @@ import '../services/quran_service.dart';
 import '../services/alarm_service.dart';
 
 class AppProvider extends ChangeNotifier {
-  double _latitude = 41.0082; 
+  // Varsayılan Konum (İstanbul)
+  double _latitude = 41.0082;
   double _longitude = 28.9784;
   String _cityName = 'İstanbul';
   String _countryName = 'Türkiye';
+
   bool _locationLoading = true;
   String? _locationError;
 
@@ -28,12 +32,13 @@ class AppProvider extends ChangeNotifier {
 
   QuranVerse? _dailyVerse;
 
-  Map<String, bool> _alarmEnabled = {};
-  Map<String, AlarmMode> _alarmModes = {};
+  final Map<String, bool> _alarmEnabled = {};
+  final Map<String, AlarmMode> _alarmModes = {};
 
   int _ramadanDay = 0;
   int _totalRamadanDays = 30;
 
+  // Getters
   double get latitude => _latitude;
   double get longitude => _longitude;
   String get cityName => _cityName;
@@ -52,14 +57,20 @@ class AppProvider extends ChangeNotifier {
   int get totalRamadanDays => _totalRamadanDays;
 
   Future<void> initialize() async {
+    // 1. Önce kayıtlı tercihleri yükle
     await _loadPreferences();
-    await _getCurrentLocation();
-    _calculatePrayerTimes();
+
+    // 2. Konumu bul ve vakitleri hesapla (Bu işlem async devam eder)
+    // await kullanmıyoruz ki UI hemen açılsın, loading dönsün
+    _getCurrentLocation();
+
+    // 3. Diğer verileri hazırla
     _loadDailyVerse();
     _startCountdownTimer();
     _calculateRamadanDay();
+
+    // 4. Alarm servisini başlat
     await AlarmService.initialize();
-    _scheduleAlarms();
   }
 
   Future<void> _loadPreferences() async {
@@ -72,21 +83,30 @@ class AppProvider extends ChangeNotifier {
     _sunniMethod = SunniMethod.values[methodIndex];
 
     final alarmKeys = [
-      'İmsak (Sahur)', 'Sabah', 'Güneş', 'Öğle',
-      'İkindi', 'Akşam (İftar)', 'Akşam (Mağrib)', 'Yatsı'
+      'İmsak (Sahur)',
+      'Sabah',
+      'Güneş',
+      'Öğle',
+      'İkindi',
+      'Akşam (İftar)',
+      'Akşam (Mağrib)',
+      'Yatsı'
     ];
+
     for (final key in alarmKeys) {
       _alarmEnabled[key] = prefs.getBool('alarm_enabled_$key') ?? false;
       final modeIndex = prefs.getInt('alarm_mode_$key') ?? 0;
       _alarmModes[key] = AlarmMode.values[modeIndex];
     }
 
-    _alarmEnabled['İmsak (Sahur)'] =
-        prefs.getBool('alarm_enabled_İmsak (Sahur)') ?? true;
-    _alarmEnabled['Akşam (İftar)'] =
-        prefs.getBool('alarm_enabled_Akşam (İftar)') ?? true;
-    _alarmEnabled['Akşam (Mağrib)'] =
-        prefs.getBool('alarm_enabled_Akşam (Mağrib)') ?? true;
+    // Varsayılan alarmlar
+    if (prefs.getBool('alarm_enabled_İmsak (Sahur)') == null) {
+      _alarmEnabled['İmsak (Sahur)'] = true;
+    }
+    if (prefs.getBool('alarm_enabled_Akşam (İftar)') == null) {
+      _alarmEnabled['Akşam (İftar)'] = true;
+    }
+
     _alarmModes['İmsak (Sahur)'] ??= AlarmMode.adhan;
     _alarmModes['Akşam (İftar)'] ??= AlarmMode.adhan;
     _alarmModes['Akşam (Mağrib)'] ??= AlarmMode.adhan;
@@ -107,6 +127,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _getCurrentLocation() async {
     _locationLoading = true;
+    // Loading durumunu UI'a bildir
     notifyListeners();
 
     try {
@@ -114,6 +135,8 @@ class AppProvider extends ChangeNotifier {
       if (!serviceEnabled) {
         _locationError = 'Konum servisi kapalı';
         _locationLoading = false;
+        // Konum kapalıysa varsayılan (İstanbul) ile hesapla
+        _calculatePrayerTimes();
         notifyListeners();
         return;
       }
@@ -124,6 +147,7 @@ class AppProvider extends ChangeNotifier {
         if (permission == LocationPermission.denied) {
           _locationError = 'Konum izni reddedildi';
           _locationLoading = false;
+          _calculatePrayerTimes(); // İzin yoksa varsayılan ile devam
           notifyListeners();
           return;
         }
@@ -132,33 +156,64 @@ class AppProvider extends ChangeNotifier {
       if (permission == LocationPermission.deniedForever) {
         _locationError = 'Konum izni kalıcı olarak reddedildi';
         _locationLoading = false;
+        _calculatePrayerTimes(); // İzin yoksa varsayılan ile devam
         notifyListeners();
         return;
       }
 
+      // Konumu al
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
+        desiredAccuracy: LocationAccuracy.medium,
       );
 
+      // Koordinatları güncelle
       _latitude = position.latitude;
       _longitude = position.longitude;
 
+      // Adres Çözümleme (Bursa / Nilüfer gibi)
       try {
         final placemarks = await placemarkFromCoordinates(
           _latitude,
           _longitude,
         );
+
         if (placemarks.isNotEmpty) {
-          _cityName = placemarks.first.locality ?? 'Bilinmiyor';
-          _countryName = placemarks.first.country ?? '';
+          final place = placemarks.first;
+
+          String? il = place.administrativeArea; // Örn: Bursa
+          String? ilce = place.subAdministrativeArea; // Örn: Nilüfer
+
+          // Şehir ismini belirleme mantığı
+          if (ilce != null && ilce.isNotEmpty && il != null && il.isNotEmpty) {
+            if (ilce == il) {
+              _cityName = il;
+            } else {
+              _cityName = '$ilce / $il';
+            }
+          } else if (il != null && il.isNotEmpty) {
+            _cityName = il;
+          } else {
+            _cityName = place.locality ?? 'Konum Alındı';
+          }
+
+          _countryName = place.country ?? 'Türkiye';
         }
       } catch (e) {
-        _cityName = 'Konum alındı';
+        // Geocoding hatası olsa bile koordinatlar elimizde, devam et.
+        print("Adres hatası: $e");
+        if (_cityName == 'İstanbul') _cityName = 'Konum Alındı';
       }
 
       _locationError = null;
+
+      // KRİTİK NOKTA: Koordinatlar güncellendi, şimdi vakitleri hesapla!
+      _calculatePrayerTimes();
+
+      // Alarmları yeni vakitlere göre güncelle
+      _scheduleAlarms();
     } catch (e) {
-      _locationError = 'Konum alınamadı: Varsayılan İstanbul kullanılıyor';
+      _locationError = 'Konum alınamadı. Varsayılan konum kullanılıyor.';
+      _calculatePrayerTimes(); // Hata durumunda da hesapla (varsayılan ile)
     }
 
     _locationLoading = false;
@@ -166,6 +221,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   void _calculatePrayerTimes() {
+    // Burada PrayerTimeService'in doğru yapılandırıldığından emin olun.
+    // Diyanet formülü (CalculationMethod.turkey) Service içinde seçili olmalı.
     _prayerTimes = PrayerTimeService.calculatePrayerTimes(
       latitude: _latitude,
       longitude: _longitude,
@@ -176,13 +233,13 @@ class AppProvider extends ChangeNotifier {
 
     _nextPrayer = PrayerTimeService.getNextPrayer(_prayerTimes);
     _timeUntilNext = PrayerTimeService.timeUntilNextPrayer(_prayerTimes);
-
-    notifyListeners();
   }
+
+  // ... (Geri kalan fonksiyonlar aynı: _loadDailyVerse, _startCountdownTimer vs.)
 
   void _loadDailyVerse() {
     _dailyVerse = QuranService.getDailyVerse();
-    notifyListeners();
+    // notifyListeners(); // initialize içinde çağırdığımız için burada gerek yok
   }
 
   void _startCountdownTimer() {
@@ -194,36 +251,61 @@ class AppProvider extends ChangeNotifier {
       if (_nextPrayer == null) {
         _calculatePrayerTimes();
       }
-
       notifyListeners();
     });
   }
 
+  String get ramadanStartDateStr {
+    try {
+      HijriCalendar.setLocal('tr');
+      final todayHijri = HijriCalendar.now();
+      var targetYear = todayHijri.hYear;
+
+      if (todayHijri.hMonth > 9) {
+        targetYear++;
+      }
+
+      final ramadanFirstDay = HijriCalendar();
+      ramadanFirstDay.hYear = targetYear;
+      ramadanFirstDay.hMonth = 9;
+      ramadanFirstDay.hDay = 1;
+
+      final gregorianDate = ramadanFirstDay.hijriToGregorian(targetYear, 9, 1);
+      final formatter = DateFormat("d MMMM yyyy", "tr_TR");
+      return formatter.format(gregorianDate);
+    } catch (e) {
+      return "17 Şubat 2026";
+    }
+  }
+
   void _calculateRamadanDay() {
-    final now = DateTime.now();
-    final ramadanStart2026 = DateTime(2026, 2, 17);
-    final ramadanStart2025 = DateTime(2025, 2, 28);
+    try {
+      HijriCalendar.setLocal('tr');
+      final todayHijri = HijriCalendar.now();
 
-    DateTime ramadanStart;
-    if (now.year == 2026) {
-      ramadanStart = ramadanStart2026;
-    } else if (now.year == 2025) {
-      ramadanStart = ramadanStart2025;
-    } else {
-      ramadanStart = ramadanStart2026;
+      if (todayHijri.hMonth == 9) {
+        _ramadanDay = todayHijri.hDay;
+        _totalRamadanDays = todayHijri.lengthOfMonth;
+      } else {
+        _ramadanDay = 0;
+        _totalRamadanDays = 30;
+      }
+    } catch (e) {
+      // Yedek plan (Manuel hesaplama)
+      final now = DateTime.now();
+      DateTime ramadanStart =
+          (now.year == 2025) ? DateTime(2025, 3, 1) : DateTime(2026, 2, 17);
+      final diff = DateTime(now.year, now.month, now.day)
+          .difference(ramadanStart)
+          .inDays;
+
+      if (diff >= 0 && diff < 30) {
+        _ramadanDay = diff + 1;
+      } else {
+        _ramadanDay = 0;
+      }
+      _totalRamadanDays = 30;
     }
-
-    final difference = now.difference(ramadanStart).inDays;
-    if (difference >= 0 && difference < 30) {
-      _ramadanDay = difference + 1;
-    } else if (difference < 0) {
-      _ramadanDay = 0; 
-    } else {
-      _ramadanDay = 0; 
-    }
-
-    _totalRamadanDays = 30;
-    notifyListeners();
   }
 
   Future<void> _scheduleAlarms() async {
@@ -234,6 +316,7 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
+  // Setter Fonksiyonları
   Future<void> setMadhhab(MadhhabType madhhab) async {
     _madhhab = madhhab;
     _calculatePrayerTimes();
@@ -264,6 +347,7 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Konumu manuel güncellemek gerekirse
   Future<void> updateLocation(double lat, double lng, String city) async {
     _latitude = lat;
     _longitude = lng;

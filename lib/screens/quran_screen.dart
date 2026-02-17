@@ -35,12 +35,10 @@ class QuranScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 if (verse != null)
                   SliverToBoxAdapter(
                     child: _buildMainVerseCard(verse, provider),
                   ),
-
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -62,7 +60,6 @@ class QuranScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -72,7 +69,6 @@ class QuranScreen extends StatelessWidget {
                     childCount: allVerses.length,
                   ),
                 ),
-
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 120),
                 ),
@@ -122,7 +118,6 @@ class QuranScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -137,7 +132,6 @@ class QuranScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -157,7 +151,6 @@ class QuranScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Text(
                     verse.turkishTranslation,
                     style: const TextStyle(
@@ -169,7 +162,6 @@ class QuranScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-
                   Text(
                     verse.englishTranslation,
                     style: TextStyle(
@@ -180,7 +172,6 @@ class QuranScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -202,9 +193,7 @@ class QuranScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   TextButton.icon(
                     onPressed: provider.refreshVerse,
                     icon: const Icon(Icons.refresh, size: 18),
@@ -257,7 +246,6 @@ class QuranScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +271,6 @@ class QuranScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const Icon(
                   Icons.chevron_right,
                   color: AppColors.textSecondary,
@@ -326,7 +313,6 @@ class QuranScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   Text(
                     verse.arabicText,
                     style: const TextStyle(
@@ -338,10 +324,8 @@ class QuranScreen extends StatelessWidget {
                     textDirection: TextDirection.rtl,
                   ),
                   const SizedBox(height: 20),
-
                   const Divider(color: AppColors.surfaceLight),
                   const SizedBox(height: 16),
-
                   Text(
                     verse.turkishTranslation,
                     style: const TextStyle(
@@ -352,7 +336,6 @@ class QuranScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-
                   Text(
                     verse.englishTranslation,
                     style: const TextStyle(
@@ -363,7 +346,6 @@ class QuranScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

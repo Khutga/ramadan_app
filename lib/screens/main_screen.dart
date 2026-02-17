@@ -4,6 +4,7 @@ import 'home_screen.dart';
 import 'prayer_times_screen.dart';
 import 'quran_screen.dart';
 import 'settings_screen.dart';
+import '../services/ad_service.dart'; // <-- Yeni oluşturduğumuz dosyayı import edin
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -25,11 +26,25 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      // Body kısmını Column yaptık
+      body: Column(
+        children: [
+          // Sayfaların içeriği tüm alanı kaplasın
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _screens,
+            ),
+          ),
+          
+          // --- REKLAM ALANI ---
+          // Alt barın hemen üzerinde sabit duracak reklam
+          const MyBannerAdWidget(),
+        ],
       ),
+      
       bottomNavigationBar: Container(
+        // ... (Buradaki kodlarınız aynı kalacak)
         decoration: BoxDecoration(
           color: AppColors.primaryMid,
           boxShadow: [
@@ -41,6 +56,8 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         child: SafeArea(
+          // SafeArea'nın bottom: false yapılması gerekebilir reklamla çakışırsa
+          // ama genelde sorun olmaz.
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
@@ -57,7 +74,6 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
     return GestureDetector(

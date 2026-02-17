@@ -1,4 +1,4 @@
-package com.example.ramadan_app
+package com.codefellas.ramazan
 
 import io.flutter.embedding.android.FlutterActivity
 
