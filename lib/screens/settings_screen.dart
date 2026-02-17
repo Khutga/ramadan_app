@@ -184,7 +184,7 @@ class SettingsScreen extends StatelessWidget {
         isSelected: isSelected,
         title: method.displayName,
         subtitle: subtitle,
-        activeColor: AppColors.accent,
+        activeColor: AppColors.sunni,
         onTap: () {
           provider.setMadhhab(MadhhabType.sunni);
           provider.setSunniMethod(method);

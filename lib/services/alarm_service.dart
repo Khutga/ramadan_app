@@ -27,7 +27,7 @@ class AlarmService {
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
-          'ramadan_alarms',
+          'ramadan_alarms_v4',
           'Ramazan Alarmları',
           description: 'İftar, Sahur ve Namaz vakti bildirimleri',
           importance: Importance.max,
@@ -38,7 +38,7 @@ class AlarmService {
 
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
-          'ramadan_test_alarms',
+          'ramadan_test_alarms_v4',
           'Test Alarmları',
           description: 'Alarm test bildirimleri',
           importance: Importance.max,
@@ -49,7 +49,7 @@ class AlarmService {
 
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
-          'ramadan_sahur_alarm',
+          'ramadan_sahur_channel_v4',
           'Sahur Kalkma Alarmı',
           description: 'Sahura kalkma bildirimi',
           importance: Importance.max,
@@ -87,7 +87,7 @@ class AlarmService {
 
   static AndroidNotificationDetails _buildAndroidDetails(
     AlarmMode mode, {
-    String channelId = 'ramadan_alarms',
+    String channelId = 'ramadan_alarms_v4',
     String channelName = 'Ramazan Alarmları',
   }) {
     switch (mode) {
@@ -148,7 +148,7 @@ class AlarmService {
 
   static NotificationDetails _buildDetails(
     AlarmMode mode, {
-    String channelId = 'ramadan_alarms',
+    String channelId = 'ramadan_alarms_v4',
     String channelName = 'Ramazan Alarmları',
   }) {
     return NotificationDetails(
@@ -262,7 +262,7 @@ class AlarmService {
         'İmsak vaktine $offsetMinutes dakika kaldı.',
         tz.TZDateTime.from(scheduledTime, tz.local),
         _buildDetails(mode,
-            channelId: 'ramadan_sahur_alarm',
+            channelId: 'ramadan_sahur_alarm_v4',
             channelName: 'Sahur Kalkma Alarmı'),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: null,
@@ -305,7 +305,7 @@ class AlarmService {
         '$delaySeconds saniye sonra "${mode.displayName}" bildirim gelecek.',
         _buildDetails(
           AlarmMode.silent,
-          channelId: 'ramadan_test_alarms',
+          channelId: 'ramadan_test_alarms_v4',
           channelName: 'Test Alarmları',
         ),
       );
@@ -325,7 +325,7 @@ class AlarmService {
           '${mode.displayName} modunda test alarmı çalıyor!',
           _buildDetails(
             mode,
-            channelId: 'ramadan_test_alarms',
+            channelId: 'ramadan_test_alarms_v4',
             channelName: 'Test Alarmları',
           ),
         );
