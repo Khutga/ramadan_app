@@ -2,7 +2,7 @@ name: ramadan_app
 description: Ramazan uygulaması - İftar, Sahur, Namaz Saatleri, Kuran Ayetleri
 
 publish_to: 'none'
-version: 1.0.1+101
+version: 1.0.3+103
 
 environment:
   sdk: '>=3.1.0 <4.0.0'

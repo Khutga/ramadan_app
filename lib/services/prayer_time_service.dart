@@ -87,13 +87,13 @@ class PrayerTimeService {
       times.add(PrayerTimeModel(
         name: 'Akşam (Mağrib)',
         nameArabic: 'المغرب',
-        time: maghribShia,
+        time: /*  DateTime(2026, 2, 18, 18, 25)  */ maghribShia.toLocal(),
       ));
     } else {
       times.add(PrayerTimeModel(
         name: 'Akşam (İftar)',
         nameArabic: 'المغرب',
-        time: prayerTimes.maghrib.toLocal(),
+        time: /* DateTime(2026, 2, 18, 19, 42) */ prayerTimes.maghrib.toLocal(),
       ));
     }
 

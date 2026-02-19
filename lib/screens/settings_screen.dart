@@ -38,33 +38,27 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   _buildSectionHeader('HESAPLAMA YÖNTEMİ'),
                   _buildCalculationMethodCard(context, provider),
                   const SizedBox(height: 32),
-
-                  _buildSectionHeader('KONUM SERVİSLERİ'),
-                  _buildLocationCard(provider),
-                  const SizedBox(height: 32),
-
-                  _buildSectionHeader('ALARM & BİLDİRİM'),
-                  _buildAlarmSettingsCard(context, provider),
-                  const SizedBox(height: 16),
-                  _TestAlarmCard(),
-                  const SizedBox(height: 32),
-
                   _buildSectionHeader('SAHUR ALARMI'),
                   _buildSahurAlarmCard(context, provider),
                   const SizedBox(height: 32),
-
-                  // ===== YENİ: DEBUG BÖLÜMÜ =====
-                  _buildSectionHeader('BİLDİRİM TEŞHİS'),
-                  const _DebugCard(),
+                  _buildSectionHeader('KONUM SERVİSLERİ'),
+                  _buildLocationCard(provider),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('ALARM & BİLDİRİM'),
+                  _buildAlarmSettingsCard(context, provider),
+                  /*  const SizedBox(height: 16),
+                  /*  _TestAlarmCard(), */
                   const SizedBox(height: 32),
 
+                  // ===== YENİ: DEBUG BÖLÜMÜ =====
+                  _buildSectionHeader('BİLDİRİM TEŞHİS'), */
+                  /*  const _DebugCard(), */
+                  const SizedBox(height: 32),
                   _buildSectionHeader('HAKKINDA'),
                   _buildInfoCard(),
-
                   const SizedBox(height: 80),
                 ],
               ),
@@ -755,7 +749,7 @@ class SettingsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
-                  'v1.0.0',
+                  'v1.0.3',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -814,7 +808,7 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// =========================================================
+/* // =========================================================
 // DEBUG KARTI - BİLDİRİM TEŞHİS
 // =========================================================
 class _DebugCard extends StatefulWidget {
@@ -1042,12 +1036,12 @@ class _DebugCardState extends State<_DebugCard> {
       ),
     );
   }
-}
+} */
 
 // =========================================================
 // TEST ALARM KARTI (StatefulWidget)
 // =========================================================
-class _TestAlarmCard extends StatefulWidget {
+/* class _TestAlarmCard extends StatefulWidget {
   @override
   State<_TestAlarmCard> createState() => _TestAlarmCardState();
 }
@@ -1242,3 +1236,4 @@ class _TestAlarmCardState extends State<_TestAlarmCard> {
     );
   }
 }
+ */

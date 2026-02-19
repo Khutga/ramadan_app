@@ -15,6 +15,18 @@ import 'utils/theme.dart';
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
+// =========================================================
+// 1. DÜZELTME: @pragma BURAYA, EN DIŞARIYA EKLENİR!
+// Uygulama tamamen kapalıyken (kill) bildirime tıklandığında
+// veya arka plan işlemi gerektiğinde sistem bu fonksiyonu bulur.
+// =========================================================
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) {
+  // Arka planda bildirime tıklandı.
+  // Buradan istersen AlarmService.stopAdhan() çağırarak çalan sesi susturabilirsin.
+  print('[Background Notification] Tıklandı: ${notificationResponse.payload}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HijriCalendar.setLocal('tr');
@@ -34,8 +46,7 @@ void main() async {
   // Bildirim eklentisini başlat
   const AndroidInitializationSettings androidSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-  const DarwinInitializationSettings iosSettings =
-      DarwinInitializationSettings(
+  const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
     requestAlertPermission: true,
     requestBadgePermission: true,
     requestSoundPermission: true,
@@ -48,14 +59,18 @@ void main() async {
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: (details) {
-      // Bildirime tıklanınca yapılacak işlem
+      // Uygulama açıkken bildirime tıklanınca yapılacak işlem
       print('[Notification] Tıklandı: ${details.payload}');
     },
+    // =========================================================
+    // 2. DÜZELTME: Arka plan handler'ını buraya veriyoruz!
+    // =========================================================
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
 
   // Android bildirim izinlerini iste
-  final androidPlugin = flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
+  final androidPlugin =
+      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
   if (androidPlugin != null) {
     await androidPlugin.requestNotificationsPermission();

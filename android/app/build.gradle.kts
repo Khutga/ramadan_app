@@ -56,6 +56,14 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            
+            // --- EKLENEN PROGUARD VE KÜÇÜLTME AYARLARI ---
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

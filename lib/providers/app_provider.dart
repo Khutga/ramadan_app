@@ -74,41 +74,120 @@ class AppProvider extends ChangeNotifier {
   Duration? get timeUntilRamadan => _timeUntilRamadan;
   Duration? get timeUntilNextRamadan => _timeUntilNextRamadan;
 
-  // İftar ve Sahur'a kalan süre
-  Duration? get timeUntilIftar {
+  // =========================================================
+  // YENİ: RAMAZAN PENCERESİ (1 Gün Öncesi -> 1 Gün Sonrası)
+  // =========================================================
+  bool get _isWithinRamadanWindow {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final startDate = _ramadanStartDate;
+    // Başlangıçtan 1 gün öncesi
+    final startWindow = DateTime(startDate.year, startDate.month, startDate.day)
+        .subtract(const Duration(days: 1));
+
+    final endDate = startDate.add(Duration(days: _totalRamadanDays));
+    // Bitişten 1 gün sonrası
+    final endWindow = DateTime(endDate.year, endDate.month, endDate.day)
+        .add(const Duration(days: 1));
+
+    // Bugün bu iki tarih arasında mı?
+    return (today.isAtSameMomentAs(startWindow) ||
+            today.isAfter(startWindow)) &&
+        (today.isAtSameMomentAs(endWindow) || today.isBefore(endWindow));
+  }
+
+  // =========================================================
+  // AKILLI İFTAR VE SAHUR ZAMANLARI
+  // =========================================================
+
+  DateTime? get iftarTime {
+    if (_prayerTimes.isEmpty) return null;
+    final now = DateTime.now();
+
+    DateTime? todayTime;
     for (final prayer in _prayerTimes) {
-      if ((prayer.name.contains('İftar') || prayer.name.contains('Mağrib')) &&
-          prayer.time.isAfter(DateTime.now())) {
-        return prayer.time.difference(DateTime.now());
+      if (prayer.name.contains('İftar') || prayer.name.contains('Mağrib')) {
+        todayTime = prayer.time;
+        break;
       }
+    }
+
+    if (todayTime == null) return null;
+
+    // Eğer ramazan dönemi içindeysek ve bugünün iftarı GEÇTİYSE, sürekli olması için yarının iftarını getir.
+    if (_isWithinRamadanWindow && todayTime.isBefore(now)) {
+      final tomorrowTimes = PrayerTimeService.calculatePrayerTimes(
+        latitude: _latitude,
+        longitude: _longitude,
+        date: now.add(const Duration(days: 1)).toLocal(),
+        madhhab: _madhhab,
+        sunniMethod: _sunniMethod,
+      );
+      for (final prayer in tomorrowTimes) {
+        if (prayer.name.contains('İftar') || prayer.name.contains('Mağrib')) {
+          return prayer.time;
+        }
+      }
+    }
+    // Değilse bugünün saatini döndür (UI'da kartta gözükmesi için)
+    return todayTime;
+  }
+
+  DateTime? get imsakTime {
+    if (_prayerTimes.isEmpty) return null;
+    final now = DateTime.now();
+
+    DateTime? todayTime;
+    for (final prayer in _prayerTimes) {
+      if (prayer.name.contains('İmsak') || prayer.name.contains('Sahur')) {
+        todayTime = prayer.time;
+        break;
+      }
+    }
+
+    if (todayTime == null) return null;
+
+    // Eğer ramazan dönemi içindeysek ve bugünün sahuru GEÇTİYSE, yarının sahurunu getir.
+    if (_isWithinRamadanWindow && todayTime.isBefore(now)) {
+      final tomorrowTimes = PrayerTimeService.calculatePrayerTimes(
+        latitude: _latitude,
+        longitude: _longitude,
+        date: now.add(const Duration(days: 1)).toLocal(),
+        madhhab: _madhhab,
+        sunniMethod: _sunniMethod,
+      );
+      for (final prayer in tomorrowTimes) {
+        if (prayer.name.contains('İmsak') || prayer.name.contains('Sahur')) {
+          return prayer.time;
+        }
+      }
+    }
+    return todayTime;
+  }
+
+  // =========================================================
+  // AKILLI SÜREKLİ GERİ SAYIMLAR
+  // =========================================================
+
+  Duration? get timeUntilIftar {
+    // Ramazan penceresi dışındaysak geri sayım gösterme (UI bunu gizleyecek)
+    if (!_isWithinRamadanWindow) return null;
+
+    final time = iftarTime; // Yukarıdaki akıllı metoddan tarihi al
+    if (time != null && time.isAfter(DateTime.now())) {
+      return time.difference(DateTime.now());
     }
     return null;
   }
 
   Duration? get timeUntilSahur {
-    for (final prayer in _prayerTimes) {
-      if ((prayer.name.contains('İmsak') || prayer.name.contains('Sahur')) &&
-          prayer.time.isAfter(DateTime.now())) {
-        return prayer.time.difference(DateTime.now());
-      }
-    }
-    return null;
-  }
+    // Ramazan penceresi dışındaysak geri sayım gösterme
+    if (!_isWithinRamadanWindow) return null;
 
-  DateTime? get imsakTime {
-    for (final prayer in _prayerTimes) {
-      if (prayer.name.contains('İmsak') || prayer.name.contains('Sahur')) {
-        return prayer.time;
-      }
-    }
-    return null;
-  }
-
-  DateTime? get iftarTime {
-    for (final prayer in _prayerTimes) {
-      if (prayer.name.contains('İftar') || prayer.name.contains('Mağrib')) {
-        return prayer.time;
-      }
+    final time = imsakTime; // Yukarıdaki akıllı metoddan tarihi al
+    if (time != null && time.isAfter(DateTime.now())) {
+      return time.difference(DateTime.now());
     }
     return null;
   }
@@ -202,17 +281,13 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _getCurrentLocation() async {
     _locationLoading = true;
-    // Loading durumunu UI'a bildir
     notifyListeners();
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _locationError = 'Konum servisi kapalı';
-        _locationLoading = false;
-        // Konum kapalıysa varsayılan (İstanbul) ile hesapla
-        _calculatePrayerTimes();
-        notifyListeners();
+        _stopLoadingAndNotify();
         return;
       }
 
@@ -221,81 +296,47 @@ class AppProvider extends ChangeNotifier {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           _locationError = 'Konum izni reddedildi';
-          _locationLoading = false;
-          _calculatePrayerTimes(); // İzin yoksa varsayılan ile devam
-          notifyListeners();
+          _stopLoadingAndNotify();
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         _locationError = 'Konum izni kalıcı olarak reddedildi';
-        _locationLoading = false;
-        _calculatePrayerTimes(); // İzin yoksa varsayılan ile devam
-        notifyListeners();
+        _stopLoadingAndNotify();
         return;
       }
 
-      // Konumu al
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      );
+      Position? position;
+      try {
+        position = await Geolocator.getLastKnownPosition();
+      } catch (_) {}
 
-      // Koordinatları güncelle
+      if (position == null) {
+        const LocationSettings locationSettings = LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 100,
+          timeLimit: Duration(seconds: 8),
+        );
+        position = await Geolocator.getCurrentPosition();
+      }
+
       _latitude = position.latitude;
       _longitude = position.longitude;
 
-      // Adres Çözümleme (Bursa / Nilüfer gibi)
-      try {
-        final placemarks = await placemarkFromCoordinates(
-          _latitude,
-          _longitude,
-        );
-
-        if (placemarks.isNotEmpty) {
-          final place = placemarks.first;
-
-          String? il = place.administrativeArea; // Örn: Bursa
-          String? ilce = place.subAdministrativeArea; // Örn: Nilüfer
-
-          // Şehir ismini belirleme mantığı
-          if (ilce != null && ilce.isNotEmpty && il != null && il.isNotEmpty) {
-            if (ilce == il) {
-              _cityName = il;
-            } else {
-              _cityName = '$ilce / $il';
-            }
-          } else if (il != null && il.isNotEmpty) {
-            _cityName = il;
-          } else {
-            _cityName = place.locality ?? 'Konum Alındı';
-          }
-
-          _countryName = place.country ?? 'Türkiye';
-        }
-      } catch (e) {
-        // Geocoding hatası olsa bile koordinatlar elimizde, devam et.
-        print("Adres hatası: $e");
-        if (_cityName == 'İstanbul') _cityName = 'Konum Alındı';
-      }
+      await _getAddressFromCoords();
 
       _locationError = null;
-
-      // KRİTİK NOKTA: Koordinatlar güncellendi, şimdi vakitleri hesapla!
-      _calculatePrayerTimes();
-
-      // Alarmları yeni vakitlere göre güncelle
-      _scheduleAlarms();
     } catch (e) {
-      _locationError = 'Konum alınamadı. Varsayılan konum kullanılıyor.';
-      _calculatePrayerTimes(); // Hata durumunda da hesapla (varsayılan ile)
+      _useDefaultLocation();
+    } finally {
+      _locationLoading = false;
+      _calculatePrayerTimes();
+      _scheduleAlarms();
+      notifyListeners();
     }
-
-    _locationLoading = false;
-    notifyListeners();
   }
 
-  // Varsayılan Konum Yardımcısı
   void _useDefaultLocation() {
     _latitude = 41.0082; // İstanbul
     _longitude = 28.9784;
@@ -304,14 +345,13 @@ class AppProvider extends ChangeNotifier {
     _locationError = 'Konum alınamadı, İstanbul gösteriliyor.';
   }
 
-  // Adres Çözümleme Yardımcısı
   Future<void> _getAddressFromCoords() async {
     try {
       final placemarks = await placemarkFromCoordinates(_latitude, _longitude);
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
         if (place.administrativeArea != null) {
-          _cityName = place.administrativeArea!; // İl
+          _cityName = place.administrativeArea!;
           if (place.subAdministrativeArea != null &&
               place.subAdministrativeArea != place.administrativeArea) {
             _cityName =
@@ -322,12 +362,9 @@ class AppProvider extends ChangeNotifier {
         }
         _countryName = place.country ?? 'Türkiye';
       }
-    } catch (_) {
-      // Geocoding hatası önemsiz, koordinat var nasılsa
-    }
+    } catch (_) {}
   }
 
-  // Kod tekrarını önlemek için küçük bir yardımcı
   void _stopLoadingAndNotify() {
     _locationLoading = false;
     _calculatePrayerTimes();
@@ -345,6 +382,21 @@ class AppProvider extends ChangeNotifier {
 
     _nextPrayer = PrayerTimeService.getNextPrayer(_prayerTimes);
     _timeUntilNext = PrayerTimeService.timeUntilNextPrayer(_prayerTimes);
+
+    // CPU OPTİMİZASYONU: Yatsı namazı geçtikten sonra timer'ın saniyede bir
+    // boşuna bugünü hesaplamaması için vakitleri direkt yarına çekiyoruz.
+    if (_nextPrayer == null) {
+      final tomorrowTimes = PrayerTimeService.calculatePrayerTimes(
+        latitude: _latitude,
+        longitude: _longitude,
+        date: DateTime.now().add(const Duration(days: 1)).toLocal(),
+        madhhab: _madhhab,
+        sunniMethod: _sunniMethod,
+      );
+      _prayerTimes = tomorrowTimes;
+      _nextPrayer = PrayerTimeService.getNextPrayer(_prayerTimes);
+      _timeUntilNext = PrayerTimeService.timeUntilNextPrayer(_prayerTimes);
+    }
   }
 
   void _loadDailyVerse() {
@@ -394,7 +446,6 @@ class AppProvider extends ChangeNotifier {
       final todayHijri = HijriCalendar.now();
       var targetYear = todayHijri.hYear;
 
-      // Ramazan'dayız veya geçmişse, gelecek yıla bak
       if (todayHijri.hMonth > 9 ||
           (todayHijri.hMonth == 9 && _ramadanDay >= _totalRamadanDays)) {
         targetYear++;
@@ -407,17 +458,10 @@ class AppProvider extends ChangeNotifier {
 
       return ramadanFirstDay.hijriToGregorian(targetYear, 9, 1);
     } catch (e) {
-      // MANUEL TARİH DÜZELTMESİ:
       final now = DateTime.now();
-
-      // 2026 için İlk Oruç: 19 Şubat
-      // Eğer şu an 19 Şubat 2026'dan önceyse (veya o günse), bu tarihi döndür
       if (now.isBefore(DateTime(2026, 2, 20))) {
-        // 19'u dahil etmek için 20'sinden önce dedik
         return DateTime(2026, 2, 19);
       }
-
-      // Geçmişse 2027 tarihini döndür (Yaklaşık 8 Şubat 2027)
       return DateTime(2027, 2, 8);
     }
   }
@@ -435,7 +479,7 @@ class AppProvider extends ChangeNotifier {
 
       return ramadanFirstDay.hijriToGregorian(targetYear, 9, 1);
     } catch (e) {
-      return DateTime(2027, 2, 7);
+      return DateTime(2027, 2, 8);
     }
   }
 
@@ -443,9 +487,6 @@ class AppProvider extends ChangeNotifier {
     try {
       HijriCalendar.setLocal('tr');
       final todayHijri = HijriCalendar.now();
-      print('HijriCalendar.now(): ${HijriCalendar.now()}');
-      print(
-          'hYear: ${todayHijri.hYear}, hMonth: ${todayHijri.hMonth}, hDay: ${todayHijri.hDay}');
       if (todayHijri.hMonth == 9) {
         _ramadanDay = todayHijri.hDay;
         _totalRamadanDays = todayHijri.lengthOfMonth;
@@ -460,12 +501,12 @@ class AppProvider extends ChangeNotifier {
         _ramadanDay = 0;
         _totalRamadanDays = 30;
         _isRamadan = false;
-        _isBeforeRamadan = false; // Ramazan geçmiş, gelecek yıla sayacak
+        _isBeforeRamadan = false;
       }
     } catch (e) {
       final now = DateTime.now();
       DateTime ramadanStart =
-          (now.year == 2025) ? DateTime(2025, 3, 1) : DateTime(2026, 2, 18);
+          (now.year == 2025) ? DateTime(2025, 3, 1) : DateTime(2026, 2, 19);
       final diff = DateTime(now.year, now.month, now.day)
           .difference(ramadanStart)
           .inDays;
@@ -489,29 +530,21 @@ class AppProvider extends ChangeNotifier {
 
   void _calculateRamadanCountdown() {
     final now = DateTime.now();
-    // Saat/Dakika farkını yok saymak için sadece Yıl-Ay-Gün alıyoruz (Gece 00:00 yapar)
     final todayStart = DateTime(now.year, now.month, now.day);
 
     if (_isRamadan) {
       _timeUntilRamadan = null;
-      // Ramazan bitişine kalan
       final endDate = _ramadanStartDate.add(Duration(days: _totalRamadanDays));
       _timeUntilNextRamadan = endDate.difference(now);
     } else {
-      // Ramazan başlangıcına kalan
       final startDate = _ramadanStartDate;
-
-      // Başlangıç tarihinin de sadece gün kısmını alalım
       final startDateOnlyDate =
           DateTime(startDate.year, startDate.month, startDate.day);
 
-      // KONTROL: Eğer 'Bugün', başlangıç tarihinden ÖNCEYSE veya EŞİTSE
-      // (Böylece 18 Şubat 23:59'da bile olsanız seneye atlamaz)
       if (todayStart.isBefore(startDateOnlyDate) ||
           todayStart.isAtSameMomentAs(startDateOnlyDate)) {
         _timeUntilRamadan = startDate.difference(now);
       } else {
-        // Gerçekten tarih geçmişse (Örn: 20 Şubat olduysa) gelecek yıla bak
         final nextStart = _nextRamadanStartDate;
         _timeUntilRamadan = nextStart.difference(now);
       }
@@ -526,7 +559,6 @@ class AppProvider extends ChangeNotifier {
       alarmEnabled: _alarmEnabled,
     );
 
-    // Sahur öncesi alarm
     if (_sahurAlarmEnabled && sahurAlarmTime != null) {
       await AlarmService.scheduleSahurPreAlarm(
         scheduledTime: sahurAlarmTime!,
@@ -585,7 +617,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Sahur alarm ayarları
   Future<void> setSahurAlarmOffset(int minutes) async {
     _sahurAlarmOffset = minutes;
     await _savePreferences();
@@ -621,7 +652,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Hesaplama yöntemi bilgisi
   String get calculationMethodInfo {
     if (_madhhab == MadhhabType.shia) {
       return 'Caferi (Tahran) Yöntemi\n\n'
