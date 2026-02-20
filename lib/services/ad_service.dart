@@ -6,9 +6,9 @@ class AdService {
   // Test ID'leri. Canlıya çıkarken AdMob panelinden aldığınız ID'leri buraya yazın.
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-2884994237286567/2134552473'; // Android Test Banner ID
+      return 'ca-app-pub-2884994237286567/21345524730'; // Android Test Banner ID
     } else if (Platform.isIOS) {
-      return 'ca-app-pub-2884994237286567/2134552473'; // iOS Test Banner ID
+      return 'ca-app-pub-2884994237286567/21345524730'; // iOS Test Banner ID
     }
     throw UnsupportedError("Unsupported platform");
   }
